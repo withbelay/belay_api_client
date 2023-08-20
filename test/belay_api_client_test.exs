@@ -3,8 +3,6 @@ defmodule BelayApiClientTest do
 
   alias BelayApiClient
 
-  import ExUnit.CaptureLog
-
   setup do
     bypass = Bypass.open(port: 1111)
 
@@ -12,6 +10,55 @@ defmodule BelayApiClientTest do
   end
 
   @id UUID.uuid4()
+  @partner_id "belay_alpaca_sandbox_partner"
+  @investor_id "b6df1a1f-b7d5-479f-9a1f-c79bead97203"
+
+  describe "integration" do
+    @describetag :integration
+
+    setup do
+      url  = Application.get_env(:belay_api_client, :url)
+      client_id = Application.get_env(:belay_api_client, :client_id)
+      client_secret = Application.get_env(:belay_api_client, :client_secret)
+      partner_id = Application.get_env(:belay_api_client, :partner_id)
+
+      {:ok, _pid} =
+        BelayApiClient.start_link(
+          client_id: client_id,
+          client_secret: client_secret,
+          partner_id: partner_id,
+          belay_api_url: url
+        )
+
+      :ok
+    end
+
+    test "fetch_investor_id" do
+      assert {:ok, :not_found} == BelayApiClient.fetch_investor_id("some_email")
+    end
+
+    test "fetch_policies" do
+      assert {:ok, []} == BelayApiClient.fetch_policies(@investor_id)
+    end
+
+    test "buy_policy" do
+      assert {:ok, policy} = BelayApiClient.buy_policy(@investor_id, "AAPL", "2023-11-23", 10, 42)
+
+      assert %{
+               "expiration" => "2023-11-23",
+               "investor_account_id" => "b6df1a1f-b7d5-479f-9a1f-c79bead97203",
+               "partner_id" => "belay_alpaca_sandbox_partner",
+               "partner_investor_id" => "b6df1a1f-b7d5-479f-9a1f-c79bead97203",
+               #               "policy_id" => "bdc5de70-baaf-4600-837c-f6b2963b8ba2",
+               "qty" => 10.0,
+               "status" => "pending",
+               "strike" => 0.42,
+               "sym" => "AAPL"
+             } = policy
+
+      #      assert {:ok, ^policy} = BelayApiClient.buy_policy(@investor_id, "AAPL", "2023-11-23", 10, 42)
+    end
+  end
 
   describe "fetch_investor_id" do
     setup [:start_client, :expect_token_request]
@@ -23,7 +70,7 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(200, Jason.encode!(%{"investor_id" => @id}))
       end)
 
-      assert {:ok, @id} == BelayApiClient.fetch_investor_id("some_partner", "some_email")
+      assert {:ok, @id} == BelayApiClient.fetch_investor_id("some_email")
     end
 
     test "returns not found on 404", %{bypass: bypass} do
@@ -33,7 +80,7 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(404, "")
       end)
 
-      assert {:error, :not_found} == BelayApiClient.fetch_investor_id("some_partner", "some_email")
+      assert {:ok, :not_found} == BelayApiClient.fetch_investor_id("some_email")
     end
 
     test "returns unexpected and logs on 500", %{bypass: bypass} do
@@ -45,13 +92,8 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(500, Jason.encode!(expected_body))
       end)
 
-      log =
-        capture_log(fn ->
-          assert {:error, :unexpected} == BelayApiClient.fetch_investor_id("some_partner", "some_email")
-        end)
-
-      assert log =~ "unexpected"
-      assert log =~ "Something unexpected happened"
+      assert {:error, %{"error" => "unexpected", "error_detail" => "Something unexpected happened", "status" => 500}} ==
+               BelayApiClient.fetch_investor_id("some_email")
     end
 
     test "returns unexpected and logs on other statuses", %{bypass: bypass} do
@@ -61,12 +103,7 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(418, Jason.encode!("I'm a teapot"))
       end)
 
-      log =
-        capture_log(fn ->
-          assert {:error, :unexpected} == BelayApiClient.fetch_investor_id("some_partner", "some_email")
-        end)
-
-      assert log =~ "[BelayApiClient] 418 from Belay on /investors"
+      assert {:error, %{status: 418}} == BelayApiClient.fetch_investor_id("some_email")
     end
 
     test "returns unexpected if client can't be created", %{bypass: bypass} do
@@ -80,29 +117,17 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(500, Jason.encode!(expected_body))
       end)
 
-      log =
-        capture_log(fn ->
-          assert {:error, :unexpected} == BelayApiClient.fetch_investor_id("some_partner", "some_email")
-        end)
-
-      assert log =~ "[BelayApiClient] 500 from Belay on /oauth/token"
-      assert log =~ "unexpected"
-      assert log =~ "We can't process your request"
+      assert {
+               :error_fetching_token,
+               %{"error" => "unexpected", "error_detail" => "We can't process your request", "status" => 500}
+             } == BelayApiClient.fetch_investor_id("some_email")
     end
   end
 
   describe "fetch_policies" do
-    @investor_id UUID.uuid4()
     @other_investor_id UUID.uuid4()
 
-    setup :start_client
-
-    setup context do
-      {:ok, true} =
-        Cachex.put(context.cache_name, :belay_api_token, %{access_token: "access_token", expires_in: 86_400})
-
-      :ok
-    end
+    setup [:start_client, :expect_token_request]
 
     test "returns policies for the given investor id", %{bypass: bypass} do
       policy_a = %{
@@ -156,12 +181,10 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(500, Jason.encode!(%{"error" => "unexpected", "error_detail" => "Sucks to be you"}))
       end)
 
-      log =
-        capture_log(fn ->
-          assert {:error, :unexpected} == BelayApiClient.fetch_policies(@investor_id)
-        end)
-
-      assert log =~ "[BelayApiClient] 500 from Belay on /policies"
+      assert {
+               :error,
+               %{"error" => "unexpected", "error_detail" => "Sucks to be you", "status" => 500}
+             } == BelayApiClient.fetch_policies(@investor_id)
     end
   end
 
@@ -190,13 +213,10 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(422, Jason.encode!(expected_body))
       end)
 
-      log =
-        capture_log(fn ->
-          assert {:ignore, {:error, :unprocessable}} == BelayApiClient.fetch_oauth_token(state)
-        end)
-
-      assert log =~ "unprocessable"
-      assert log =~ "We can't process your request"
+      assert {
+               :error,
+               %{"error" => "unprocessable", "error_detail" => "We can't process your request", "status" => 422}
+             } == BelayApiClient.fetch_oauth_token(state)
     end
 
     test "returns unexpected and logs on 500", %{bypass: bypass, state: state} do
@@ -208,13 +228,10 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(500, Jason.encode!(expected_body))
       end)
 
-      log =
-        capture_log(fn ->
-          assert {:ignore, {:error, :unexpected}} == BelayApiClient.fetch_oauth_token(state)
-        end)
-
-      assert log =~ "unexpected"
-      assert log =~ "Something unexpected happened"
+      assert {
+               :error,
+               %{"error" => "unexpected", "error_detail" => "Something unexpected happened", "status" => 500}
+             } == BelayApiClient.fetch_oauth_token(state)
     end
 
     test "returns unexpected and logs on other statuses", %{bypass: bypass, state: state} do
@@ -224,12 +241,24 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(418, Jason.encode!("No coffee, just tea"))
       end)
 
-      log =
-        capture_log(fn ->
-          assert {:ignore, {:error, :unexpected}} == BelayApiClient.fetch_oauth_token(state)
-        end)
+      assert {:error, %{status: 418}} == BelayApiClient.fetch_oauth_token(state)
+    end
+  end
 
-      assert log =~ "[BelayApiClient] 418 from Belay on /oauth/token"
+  describe "buy_policy" do
+    setup [:start_client, :expect_token_request]
+
+    test "returns policy request", %{bypass: bypass} do
+      expected_body = %{"test" => "body"}
+
+      Bypass.expect_once(bypass, "POST", "/api/policies", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(200, Jason.encode!(expected_body))
+      end)
+
+      assert {:ok, expected_body} ==
+               BelayApiClient.buy_policy(@investor_id, "AAPL", "2023-11-23", 10, 42)
     end
   end
 
@@ -241,6 +270,7 @@ defmodule BelayApiClientTest do
         client_id: "client_id",
         client_secret: "client_secret",
         belay_api_url: "http://localhost:#{context.bypass_port}",
+        partner_id: @partner_id,
         token_cache_name: cache_name
       )
 
@@ -249,6 +279,7 @@ defmodule BelayApiClientTest do
     assert %BelayApiClient.State{
              client_id: "client_id",
              client_secret: "client_secret",
+             partner_id: @partner_id,
              token_cache_name: cache_name,
              token_cache_ttl: 300_000,
              url: "http://localhost:#{context.bypass_port}"
