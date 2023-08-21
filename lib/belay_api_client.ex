@@ -2,85 +2,94 @@ defmodule BelayApiClient do
   @moduledoc """
   Provides a simplified interface to BelayApi
   """
-  use Agent
-
   alias Decimal
+  alias Tesla.Client
 
-  require Logger
+  @doc """
+  Create a Tesla client for calls against BelayApi for the given client_id and client_secret
 
-  # partner_id is part of the token.  Once that's being extracted in investor controller, it can be removed
-  defmodule State do
-    defstruct ~w(client_id client_secret partner_id token_cache_name token_cache_ttl url)a
-  end
+  Used for most calls with this interface
+  """
+  @spec client(String.t(), String.t()) :: Tesla.Client.t()
+  def client(client_id, client_secret) do
+    url = Application.fetch_env!(:belay_api_client, :url)
 
-  def start_link(opts) do
-    params = %State{
-      partner_id: Keyword.fetch!(opts, :partner_id),
-      client_id: Keyword.fetch!(opts, :client_id),
-      client_secret: Keyword.fetch!(opts, :client_secret),
-      token_cache_name: Keyword.get(opts, :token_cache_name, :belay_api_cache),
-      token_cache_ttl: Keyword.get(opts, :token_cache_ttl, :timer.minutes(5)),
-      url: Keyword.fetch!(opts, :belay_api_url)
-    }
+    with {:ok, %{access_token: access_token}} <- fetch_cached_token(client_id, client_secret) do
+      middleware =
+        [{Tesla.Middleware.BaseUrl, url}, Tesla.Middleware.JSON] ++
+          [{Tesla.Middleware.Headers, [{"Authorization", "Bearer #{access_token}"}]}]
 
-    {:ok, _pid} =
-      Agent.start_link(
-        fn ->
-          {:ok, _pid} = Cachex.start_link(params.token_cache_name, ttl: params.token_cache_ttl)
-          params
-        end,
-        name: __MODULE__
-      )
+      {:ok, Tesla.client(middleware)}
+    end
   end
 
   @doc """
-  Exchange an email and a secret token for a user's investor ID
-  """
-  def fetch_investor_id(email) do
-    make_call = fn client, partner_id, email ->
-      case Tesla.post(client, "/api/investors", %{email: email, partner_id: partner_id}) do
-        {:ok, %Tesla.Env{status: 200, body: %{"investor_id" => investor_id}}} -> {:ok, investor_id}
-        response -> parse_error(response)
-      end
-    end
+  Fetch an auth token from BelayApi for the given client_id and client_secret.
 
-    with {:ok, client, state} <- client() do
-      make_call.(client, state.partner_id, email)
+  Caches the token in the configured Cachex cache.
+  """
+  def fetch_cached_token(client_id, client_secret) do
+    token_cache_name = Application.get_env(:belay_api_client, :token_cache_name, :belay_api_cache)
+    token_id = :"#{__MODULE__}.#{client_id}"
+
+    case Cachex.fetch(token_cache_name, token_id, fn -> fetch_token(client_id, client_secret) end) do
+      {:ok, token_map} ->
+        {:ok, token_map}
+
+      {:commit, %{expires_in: expires_in} = token_map} ->
+        Cachex.expire(token_cache_name, token_id, expires_in)
+        {:ok, token_map}
+
+      {_, response} ->
+        {:error_fetching_token, response}
+    end
+  end
+
+  @doc """
+  Fetch an auth token from BelayApi for the given client_id and client_secret.
+  """
+  def fetch_token(client_id, client_secret) do
+    url = Application.fetch_env!(:belay_api_client, :url)
+    client = Tesla.client([{Tesla.Middleware.BaseUrl, url}, Tesla.Middleware.JSON])
+
+    case(Tesla.post(client, "/api/oauth/token", %{client_id: client_id, client_secret: client_secret})) do
+      {:ok, %Tesla.Env{status: 200, body: %{"access_token" => access_token, "expires_in" => expires_in}}} ->
+        {:commit, %{access_token: access_token, expires_in: expires_in}}
+
+      bad_response ->
+        parse_error(bad_response)
+    end
+  end
+
+  @doc """
+  Fetch the investor_id for the given email address
+  """
+  def fetch_investor_id(%Client{} = client, partner_id, email) do
+    case Tesla.post(client, "/api/investors", %{email: email, partner_id: partner_id}) do
+      {:ok, %Tesla.Env{status: 200, body: %{"investor_id" => investor_id}}} -> {:ok, investor_id}
+      response -> parse_error(response)
     end
   end
 
   @doc """
   Fetch policies for the given investor
   """
-  def fetch_policies(investor_id) do
-    make_call = fn client, investor_id ->
-      case Tesla.get(client, "/api/policies") do
-        {:ok, %Tesla.Env{status: 200, body: policies}} ->
-          policies = Enum.filter(policies, fn policy -> policy["investor_account_id"] == investor_id end)
+  def fetch_policies(%Client{} = client, investor_id) do
+    case Tesla.get(client, "/api/policies") do
+      {:ok, %Tesla.Env{status: 200, body: policies}} ->
+        policies = Enum.filter(policies, fn policy -> policy["investor_account_id"] == investor_id end)
 
-          {:ok, policies}
+        {:ok, policies}
 
-        response ->
-          parse_error(response)
-      end
-    end
-
-    with {:ok, client, _state} <- client() do
-      make_call.(client, investor_id)
+      response ->
+        parse_error(response)
     end
   end
 
   @doc """
   Buy a policy for the given investor
   """
-  def buy_policy(investor_id, sym, expiration, qty, strike) do
-    make_call = fn client, policy ->
-      case Tesla.post(client, "/api/policies", policy) do
-        {:ok, %Tesla.Env{status: 200, body: policy_request}} -> {:ok, policy_request}
-        response -> parse_error(response)
-      end
-    end
-
+  def buy_policy(%Client{} = client, investor_id, sym, expiration, qty, strike) do
     policy = %{
       "sym" => sym,
       "expiration" => expiration,
@@ -91,49 +100,9 @@ defmodule BelayApiClient do
       "purchase_limit_price" => strike
     }
 
-    with {:ok, client, _state} <- client() do
-      make_call.(client, policy)
-    end
-  end
-
-  defp client() do
-    with %State{url: url} = state <- Agent.get(__MODULE__, fn state -> state end),
-         {:ok, %{access_token: access_token}} <- fetch_cached_token(state) do
-      middleware =
-        [{Tesla.Middleware.BaseUrl, url}, Tesla.Middleware.JSON] ++
-          [{Tesla.Middleware.Headers, [{"Authorization", "Bearer #{access_token}"}]}]
-
-      {:ok, Tesla.client(middleware), state}
-    end
-  end
-
-  defp fetch_cached_token(%State{} = state) do
-    case Cachex.fetch(state.token_cache_name, :belay_api_token, fn -> fetch_oauth_token(state) end) do
-      {:ok, token_map} ->
-        {:ok, token_map}
-
-      {:commit, %{expires_in: expires_in} = token_map} ->
-        Cachex.expire(state.token_cache_name, :belay_api_token, expires_in)
-        {:ok, token_map}
-
-      {_, response} ->
-        {:error_fetching_token, response}
-    end
-  end
-
-  #  Fetch an oauth token from Belay. For internal use only, public so it can be tested.
-  @doc false
-  def fetch_oauth_token(%State{} = state) do
-    %{client_id: client_id, client_secret: client_secret, url: url} = state
-
-    client = Tesla.client([{Tesla.Middleware.BaseUrl, url}, Tesla.Middleware.JSON])
-
-    case(Tesla.post(client, "/api/oauth/token", %{client_id: client_id, client_secret: client_secret})) do
-      {:ok, %Tesla.Env{status: 200, body: %{"access_token" => access_token, "expires_in" => expires_in}}} ->
-        {:commit, %{access_token: access_token, expires_in: expires_in}}
-
-      bad_response ->
-        parse_error(bad_response)
+    case Tesla.post(client, "/api/policies", policy) do
+      {:ok, %Tesla.Env{status: 200, body: policy_request}} -> {:ok, policy_request}
+      response -> parse_error(response)
     end
   end
 
