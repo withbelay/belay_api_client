@@ -3,18 +3,10 @@ defmodule BelayApiClientTest do
 
   alias BelayApiClient
 
-  setup_all do
-    token_cache_name = Application.get_env(:belay_api_client, :token_cache_name, :belay_api_cache)
-    token_cache_ttl = Application.get_env(:belay_api_client, :token_cache_ttl, 5)
-    {:ok, _pid} = Cachex.start_link(token_cache_name, ttl: token_cache_ttl)
-
-    :ok
-  end
-
   setup do
     bypass = Bypass.open(port: 1111)
 
-    Application.put_env(:belay_api_client, :url, "http://localhost:1111")
+    Application.put_env(:belay_api_client, :api_url, "http://localhost:1111")
 
     %{bypass: bypass, bypass_port: 1111}
   end
@@ -22,34 +14,41 @@ defmodule BelayApiClientTest do
   @id UUID.uuid4()
   @client_id UUID.uuid4()
   @client_secret UUID.uuid4()
-  @partner_id "belay_alpaca_sandbox_partner"
+  @partner_id Application.compile_env!(:belay_api_client, :partner_id)
   @investor_id "b6df1a1f-b7d5-479f-9a1f-c79bead97203"
 
   describe "integration" do
     @describetag :integration
 
-    setup do
-      partner_id = :belay_alpaca_sandbox_partner
-      opts = Application.get_env(:belay_api_client, partner_id)
-      client_id = Keyword.fetch!(opts, :client_id)
-      client_secret = Keyword.fetch!(opts, :client_secret)
-
-      Application.put_env(:belay_api_client, :url, "http://localhost:4000")
-
-      {:ok, client} = BelayApiClient.client(client_id, client_secret)
-
-      %{client: client}
+    setup _ do
+      Application.put_env(:belay_api_client, :api_url, "http://localhost:4000")
+      :ok
     end
 
-    test "fetch_investor_id", %{client: client} do
+    test "fetch_token" do
+      {client_id, client_secret} = get_real_ids()
+
+      {:commit, %{access_token: _}} = BelayApiClient.fetch_token(client_id, client_secret)
+    end
+
+    test "fetch_cached_token" do
+      {client_id, client_secret} = get_real_ids()
+
+      BelayApiClient.fetch_cached_token(client_id, client_secret)
+    end
+
+    test "fetch_investor_id" do
+      client = create_real_client()
       assert {:ok, :not_found} == BelayApiClient.fetch_investor_id(client, @partner_id, "some_email")
     end
 
-    test "fetch_policies", %{client: client} do
+    test "fetch_policies" do
+      client = create_real_client()
       assert {:ok, []} == BelayApiClient.fetch_policies(client, @investor_id)
     end
 
-    test "buy_policy", %{client: client} do
+    test "buy_policy" do
+      client = create_real_client()
       assert {:ok, policy} = BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42)
 
       assert %{
@@ -57,9 +56,9 @@ defmodule BelayApiClientTest do
                "investor_account_id" => "b6df1a1f-b7d5-479f-9a1f-c79bead97203",
                "partner_investor_id" => "b6df1a1f-b7d5-479f-9a1f-c79bead97203",
                #               "policy_id" => "bdc5de70-baaf-4600-837c-f6b2963b8ba2",
-               "qty" => 10.0,
+               "qty" => "10",
                "status" => "pending",
-               "strike" => 0.42,
+               "strike" => %{"amount" => 42, "currency" => "USD"},
                "sym" => "AAPL"
              } = policy
 
@@ -264,5 +263,22 @@ defmodule BelayApiClientTest do
       |> Plug.Conn.put_resp_content_type("application/json")
       |> Plug.Conn.resp(200, Jason.encode!(%{"access_token" => "cool_token", "expires_in" => 3600}))
     end)
+  end
+
+  defp get_real_ids() do
+    opts = Application.get_all_env(:belay_api_client)
+    client_id = Keyword.fetch!(opts, :client_id)
+    client_secret = Keyword.fetch!(opts, :client_secret)
+
+    {client_id, client_secret}
+  end
+
+  defp create_real_client() do
+    {client_id, client_secret} = get_real_ids()
+
+    Application.put_env(:belay_api_client, :api_url, "http://localhost:4000")
+
+    {:ok, client} = BelayApiClient.client(client_id, client_secret)
+    client
   end
 end
