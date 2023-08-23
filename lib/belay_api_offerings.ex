@@ -16,8 +16,10 @@ defmodule BelayApiOfferings do
     :ets.insert(__MODULE__, {:status, :disconnected})
   end
 
-  @spec start_link(String.t(), String.t(), [String.t()], keyword | nil) :: GenServer.on_start()
-  def start_link(host, token, stock_universe, opts \\ []) do
+  @spec start_link(String.t(), [String.t()], keyword | nil) :: GenServer.on_start()
+  def start_link(host, stock_universe, opts \\ []) do
+    {:ok, %{access_token: token}} = fetch_token()
+
     uri = "#{host}/partner/websocket?token=#{token}"
 
     Slipstream.start_link(__MODULE__, Keyword.merge(opts, uri: uri, stock_universe: stock_universe), name: __MODULE__)
@@ -103,5 +105,13 @@ defmodule BelayApiOfferings do
   defp add_offerings(sym, offerings) do
     IO.inspect(offerings, option: :pretty, label: "offerings; #{__ENV__.file}:#{__ENV__.line}")
     :ets.insert(__MODULE__, {sym, offerings})
+  end
+
+  defp fetch_token() do
+    opts = Application.get_all_env(:belay_api_client)
+    client_id = Keyword.fetch!(opts, :client_id)
+    client_secret = Keyword.fetch!(opts, :client_secret)
+
+    BelayApiClient.fetch_cached_token(client_id, client_secret)
   end
 end
