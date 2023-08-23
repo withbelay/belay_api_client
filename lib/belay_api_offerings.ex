@@ -75,6 +75,7 @@ defmodule BelayApiOfferings do
       case await_connect(socket) do
         {:ok, socket} ->
           :ets.insert(__MODULE__, {:status, :connected})
+
           Enum.reduce(stock_universe, socket, fn sym, socket ->
             join(socket, "offerings:#{sym}")
           end)

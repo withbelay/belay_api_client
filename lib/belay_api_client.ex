@@ -62,6 +62,16 @@ defmodule BelayApiClient do
   end
 
   @doc """
+  Fetch an investor token from BelayApi for the given client_id and client_secret.
+  """
+  def fetch_investor_token(client, investor_id) do
+    case(Tesla.get(client, "/api/investors/#{investor_id}/token")) do
+      {:ok, %Tesla.Env{status: 200, body: %{"token" => token}}} -> {:ok, %{token: token}}
+      bad_response -> parse_error(bad_response)
+    end
+  end
+
+  @doc """
   Fetch the investor_id for the given email address
   """
   def fetch_investor_id(%Client{} = client, partner_id, email) do
