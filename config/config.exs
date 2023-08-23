@@ -8,8 +8,8 @@ config :belay_api_client,
   api_url: System.get_env("BELAY_API_URL") || "http://localhost:4000",
   offerings_host: System.get_env("BELAY_API_OFFERINGS") || "ws://localhost:4000",
   partner_id: System.get_env("BELAY_API_PARTNER_ID") || "belay_alpaca",
-  client_id: System.get_env("BELAY_API_CLIENT_ID") || System.fetch_env!("BELAY_ALPACA__AUTH0__CLIENT_ID"),
-  client_secret: System.fetch_env!("BELAY_API_CLIENT_SECRET") || System.fetch_env!("BELAY_ALPACA__AUTH0__CLIENT_SECRET")
+  client_id: System.fetch_env!("BELAY_ALPACA__AUTH0__CLIENT_ID"),
+  client_secret: System.fetch_env!("BELAY_ALPACA__AUTH0__CLIENT_SECRET")
 
 config :phoenix, :json_library, Jason
 

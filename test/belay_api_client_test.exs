@@ -31,6 +31,11 @@ defmodule BelayApiClientTest do
       {:commit, %{access_token: _}} = BelayApiClient.fetch_token(client_id, client_secret)
     end
 
+    test "fetch_investor_token" do
+      client = create_real_client()
+      assert {:ok, %{token: _token}} = BelayApiClient.fetch_investor_token(client, @investor_id)
+    end
+
     test "fetch_cached_token" do
       {client_id, client_secret} = get_real_ids()
 
@@ -55,14 +60,11 @@ defmodule BelayApiClientTest do
                "expiration" => "2023-11-23",
                "investor_account_id" => "b6df1a1f-b7d5-479f-9a1f-c79bead97203",
                "partner_investor_id" => "b6df1a1f-b7d5-479f-9a1f-c79bead97203",
-               #               "policy_id" => "bdc5de70-baaf-4600-837c-f6b2963b8ba2",
                "qty" => "10",
                "status" => "pending",
                "strike" => %{"amount" => 42, "currency" => "USD"},
                "sym" => "AAPL"
              } = policy
-
-      #      assert {:ok, ^policy} = BelayApiClient.buy_policy(@investor_id, "AAPL", "2023-11-23", 10, 42)
     end
   end
 
@@ -102,7 +104,7 @@ defmodule BelayApiClientTest do
                BelayApiClient.fetch_investor_id(client, @partner_id, "some_email")
     end
 
-    test "returns unexpected and logs on other statuses", %{bypass: bypass, client: client} do
+    test "returns unexpected on other statuses", %{bypass: bypass, client: client} do
       Bypass.expect_once(bypass, "POST", "/api/investors", fn conn ->
         conn
         |> Plug.Conn.put_resp_content_type("application/json")
@@ -163,7 +165,7 @@ defmodule BelayApiClientTest do
       refute {:ok, [policy_a, policy_b]} == resp
     end
 
-    test "returns unexpected and logs on other statuses", %{bypass: bypass, client: client} do
+    test "returns unexpected on other statuses", %{bypass: bypass, client: client} do
       Bypass.expect_once(bypass, "GET", "/api/policies", fn conn ->
         conn
         |> Plug.Conn.put_resp_content_type("application/json")
@@ -191,7 +193,7 @@ defmodule BelayApiClientTest do
                BelayApiClient.fetch_token(@client_id, @client_secret)
     end
 
-    test "returns unprocessable and logs on 422", %{bypass: bypass} do
+    test "returns unprocessable on 422", %{bypass: bypass} do
       expected_body = %{"error" => "unprocessable", "error_detail" => "We can't process your request"}
 
       Bypass.expect_once(bypass, "POST", "/api/oauth/token", fn conn ->
@@ -206,7 +208,7 @@ defmodule BelayApiClientTest do
              } == BelayApiClient.fetch_token(@client_id, @client_secret)
     end
 
-    test "returns unexpected and logs on 500", %{bypass: bypass} do
+    test "returns unexpected on 500", %{bypass: bypass} do
       expected_body = %{"error" => "unexpected", "error_detail" => "Something unexpected happened"}
 
       Bypass.expect_once(bypass, "POST", "/api/oauth/token", fn conn ->
@@ -221,7 +223,7 @@ defmodule BelayApiClientTest do
              } == BelayApiClient.fetch_token(@client_id, @client_secret)
     end
 
-    test "returns unexpected and logs on other statuses", %{bypass: bypass} do
+    test "returns unexpected on other statuses", %{bypass: bypass} do
       Bypass.expect_once(bypass, "POST", "/api/oauth/token", fn conn ->
         conn
         |> Plug.Conn.put_resp_content_type("application/json")
@@ -229,6 +231,59 @@ defmodule BelayApiClientTest do
       end)
 
       assert {:error, %{status: 418}} == BelayApiClient.fetch_token(@client_id, @client_secret)
+    end
+  end
+
+  describe "fetch_investor_token" do
+    setup :create_client
+
+    test "returns token", %{bypass: bypass, client: client} do
+      expected_body = %{"token" => "1234"}
+
+      Bypass.expect_once(bypass, "GET", "/api/investors/#{@investor_id}/token", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(200, Jason.encode!(expected_body))
+      end)
+
+      assert {:ok, %{token: "1234"}} == BelayApiClient.fetch_investor_token(client, @investor_id)
+    end
+
+    test "returns forbidden on 403", %{bypass: bypass, client: client} do
+      expected_body = %{"error" => "unprocessable", "error_detail" => "We can't process your request"}
+
+      Bypass.expect_once(bypass, "GET", "/api/investors/#{@investor_id}/token", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(403, Jason.encode!(expected_body))
+      end)
+
+      assert {
+               :error,
+               %{"error" => "unprocessable", "error_detail" => "We can't process your request", "status" => 403}
+             } == BelayApiClient.fetch_investor_token(client, @investor_id)
+    end
+
+    test "returns not found on 404", %{bypass: bypass, client: client} do
+      expected_body = %{"error" => "invalid_id", "error_detail" => "Investor ID supplied is invalid"}
+
+      Bypass.expect_once(bypass, "GET", "/api/investors/#{@investor_id}/token", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(404, Jason.encode!(expected_body))
+      end)
+
+      assert {:ok, :not_found} == BelayApiClient.fetch_investor_token(client, @investor_id)
+    end
+
+    test "returns unexpected on other statuses", %{bypass: bypass, client: client} do
+      Bypass.expect_once(bypass, "GET", "/api/investors/#{@investor_id}/token", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(418, Jason.encode!("No coffee, just tea"))
+      end)
+
+      assert {:error, %{status: 418}} == BelayApiClient.fetch_investor_token(client, @investor_id)
     end
   end
 
