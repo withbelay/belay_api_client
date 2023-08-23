@@ -26,3 +26,5 @@ belay_api_client-*.tar
 /tmp/
 /.idea/
 /belay_api_client.iml
+
+.envrc

@@ -12,7 +12,7 @@ defmodule BelayApiClient do
   """
   @spec client(String.t(), String.t()) :: Tesla.Client.t()
   def client(client_id, client_secret) do
-    url = Application.fetch_env!(:belay_api_client, :url)
+    url = Application.fetch_env!(:belay_api_client, :api_url)
 
     with {:ok, %{access_token: access_token}} <- fetch_cached_token(client_id, client_secret) do
       middleware =
@@ -49,7 +49,7 @@ defmodule BelayApiClient do
   Fetch an auth token from BelayApi for the given client_id and client_secret.
   """
   def fetch_token(client_id, client_secret) do
-    url = Application.fetch_env!(:belay_api_client, :url)
+    url = Application.fetch_env!(:belay_api_client, :api_url)
     client = Tesla.client([{Tesla.Middleware.BaseUrl, url}, Tesla.Middleware.JSON])
 
     case(Tesla.post(client, "/api/oauth/token", %{client_id: client_id, client_secret: client_secret})) do
