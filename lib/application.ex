@@ -23,7 +23,7 @@ defmodule BelayApiClient.Application do
     offerings_host = Keyword.fetch!(opts, :offerings_host)
     stock_universe = Keyword.fetch!(opts, :stock_universe)
 
-    {:ok, %{access_token: token}} = BelayApiClient.fetch_cached_token(client_id, client_secret)
+    {:commit, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
 
     children(:test) ++
       [
