@@ -18,12 +18,16 @@ defmodule BelayApiClient.Application do
 
   def children(_env) do
     opts = Application.get_all_env(:belay_api_client)
+    client_id = Keyword.fetch!(opts, :client_id)
+    client_secret = Keyword.fetch!(opts, :client_secret)
     offerings_host = Keyword.fetch!(opts, :offerings_host)
     stock_universe = Keyword.fetch!(opts, :stock_universe)
 
+    {:commit, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
+
     children(:test) ++
       [
-        {BelayApiOfferings, [offerings_host, stock_universe]}
+        {BelayApiOfferings, [offerings_host, token, stock_universe]}
       ]
   end
 end
