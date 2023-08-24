@@ -11,6 +11,4 @@ config :belay_api_client,
   client_id: System.fetch_env!("BELAY_ALPACA__AUTH0__CLIENT_ID"),
   client_secret: System.fetch_env!("BELAY_ALPACA__AUTH0__CLIENT_SECRET")
 
-config :phoenix, :json_library, Jason
-
 import_config "#{config_env()}.exs"

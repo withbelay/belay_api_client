@@ -31,10 +31,10 @@ defmodule BelayApiClient.MixProject do
       {:cachex, "~> 3.5"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:esbuild, "~> 0.7.1", runtime: Mix.env() == :dev},
       {:elixir_uuid, "~> 1.2"},
-      {:slipstream, "~> 0.1.1"},
-      {:tesla, "~> 1.4"}
+      {:esbuild, "~> 0.7.1", runtime: Mix.env() == :dev},
+      {:slipstream, "~> 1.1"},
+      {:tesla, "~> 1.7"}
     ]
   end
 

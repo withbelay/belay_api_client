@@ -28,3 +28,4 @@ belay_api_client-*.tar
 /belay_api_client.iml
 
 .envrc
+.history/
