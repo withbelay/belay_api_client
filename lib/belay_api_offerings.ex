@@ -16,7 +16,7 @@ defmodule BelayApiOfferings do
     :ets.insert(__MODULE__, {:status, :disconnected})
   end
 
-  @spec start_link(String.t(), String.t(), [String.t()], keyword | nil) :: GenServer.on_start()
+  @spec start_link(keyword) :: GenServer.on_start()
   def start_link([host: host, token: token, stock_universe: stock_universe]) do
     uri = "#{host}/partner/websocket?token=#{token}"
 
