@@ -20,7 +20,7 @@ defmodule BelayApiOfferings do
   def start_link([host: host, token: token, stock_universe: stock_universe]) do
     uri = "#{host}/partner/websocket?token=#{token}"
 
-    Slipstream.start_link(__MODULE__, Keyword.merge(opts, uri: uri, stock_universe: stock_universe), name: __MODULE__)
+    Slipstream.start_link(__MODULE__, [uri: uri, stock_universe: stock_universe], name: __MODULE__)
   end
 
   @impl true
