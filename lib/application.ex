@@ -27,7 +27,7 @@ defmodule BelayApiClient.Application do
 
     children(:test) ++
       [
-        {BelayApiOfferings, [offerings_host, token, stock_universe]}
+        {BelayApiOfferings, [host: offerings_host, token: token, stock_universe: stock_universe]}
       ]
   end
 end
