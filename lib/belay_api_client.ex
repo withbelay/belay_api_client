@@ -120,10 +120,10 @@ defmodule BelayApiClient do
 
   defp parse_error({:ok, %Tesla.Env{status: status, body: body}})
        when is_map_key(body, "error") and is_map_key(body, "error_detail"),
-       do: {:error, %{"status" => status, "error" => body["error"], "error_detail" => body["error_detail"]}}
+       do: {:error, %{status: status, error: body["error"], error_detail: body["error_detail"]}}
 
   defp parse_error({:ok, %Tesla.Env{status: status, body: body}}) when is_map_key(body, "error"),
-    do: {:error, %{"status" => status, "error" => body["error"]}}
+    do: {:error, %{status: status, error: body["error"]}}
 
   defp parse_error({_, %Tesla.Env{status: status}}), do: {:error, %{status: status}}
   defp parse_error(_), do: {:error, :unknown}

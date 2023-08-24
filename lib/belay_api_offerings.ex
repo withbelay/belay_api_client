@@ -17,7 +17,7 @@ defmodule BelayApiOfferings do
   end
 
   @spec start_link(keyword) :: GenServer.on_start()
-  def start_link([host: host, token: token, stock_universe: stock_universe]) do
+  def start_link(host: host, token: token, stock_universe: stock_universe) do
     uri = "#{host}/partner/websocket?token=#{token}"
 
     Slipstream.start_link(__MODULE__, [uri: uri, stock_universe: stock_universe], name: __MODULE__)

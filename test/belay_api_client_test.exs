@@ -100,7 +100,7 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(500, Jason.encode!(expected_body))
       end)
 
-      assert {:error, %{"error" => "unexpected", "error_detail" => "Something unexpected happened", "status" => 500}} ==
+      assert {:error, %{error: "unexpected", error_detail: "Something unexpected happened", status: 500}} ==
                BelayApiClient.fetch_investor_id(client, @partner_id, "some_email")
     end
 
@@ -174,7 +174,7 @@ defmodule BelayApiClientTest do
 
       assert {
                :error,
-               %{"error" => "unexpected", "error_detail" => "Sucks to be you", "status" => 500}
+               %{error: "unexpected", error_detail: "Sucks to be you", status: 500}
              } == BelayApiClient.fetch_policies(client, @investor_id)
     end
   end
@@ -204,7 +204,7 @@ defmodule BelayApiClientTest do
 
       assert {
                :error,
-               %{"error" => "unprocessable", "error_detail" => "We can't process your request", "status" => 422}
+               %{error: "unprocessable", error_detail: "We can't process your request", status: 422}
              } == BelayApiClient.fetch_token(@client_id, @client_secret)
     end
 
@@ -219,7 +219,7 @@ defmodule BelayApiClientTest do
 
       assert {
                :error,
-               %{"error" => "unexpected", "error_detail" => "Something unexpected happened", "status" => 500}
+               %{error: "unexpected", error_detail: "Something unexpected happened", status: 500}
              } == BelayApiClient.fetch_token(@client_id, @client_secret)
     end
 
@@ -260,7 +260,7 @@ defmodule BelayApiClientTest do
 
       assert {
                :error,
-               %{"error" => "unprocessable", "error_detail" => "We can't process your request", "status" => 403}
+               %{error: "unprocessable", error_detail: "We can't process your request", status: 403}
              } == BelayApiClient.fetch_investor_token(client, @investor_id)
     end
 

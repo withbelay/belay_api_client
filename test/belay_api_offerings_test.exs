@@ -13,7 +13,7 @@ defmodule BelayApiOfferingsTest do
     host = "ws://localhost:4000"
     {:ok, %{access_token: token}} = BelayApiClient.fetch_cached_token(client_id, client_secret)
 
-    BelayApiOfferings.start_link(host, token, ["AAPL"])
+    BelayApiOfferings.start_link(host: host, token: token, stock_universe: ["AAPL"])
 
     assert_eventually(BelayApiOfferings.status() == :joined)
 
