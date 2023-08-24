@@ -44,7 +44,7 @@ defmodule BelayApiClientTest do
 
     test "fetch_investor_id" do
       client = create_real_client()
-      assert {:ok, :not_found} == BelayApiClient.fetch_investor_id(client, @partner_id, "some_email")
+      assert {:error, :not_found} == BelayApiClient.fetch_investor_id(client, @partner_id, "some_email")
     end
 
     test "fetch_policies" do
@@ -88,7 +88,7 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(404, "")
       end)
 
-      assert {:ok, :not_found} == BelayApiClient.fetch_investor_id(client, @partner_id, "some_email")
+      assert {:error, %{status: 404}} == BelayApiClient.fetch_investor_id(client, @partner_id, "some_email")
     end
 
     test "returns unexpected on 500", %{bypass: bypass, client: client} do
@@ -273,7 +273,7 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(404, Jason.encode!(expected_body))
       end)
 
-      assert {:ok, :not_found} == BelayApiClient.fetch_investor_token(client, @investor_id)
+      assert {:error, %{error: "invalid_id", status: 404, error_detail: "Investor ID supplied is invalid"}} == BelayApiClient.fetch_investor_token(client, @investor_id)
     end
 
     test "returns unexpected on other statuses", %{bypass: bypass, client: client} do

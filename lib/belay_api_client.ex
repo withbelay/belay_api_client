@@ -116,8 +116,6 @@ defmodule BelayApiClient do
     end
   end
 
-  defp parse_error({:ok, %Tesla.Env{status: 404}}), do: {:ok, :not_found}
-
   defp parse_error({:ok, %Tesla.Env{status: status, body: body}})
        when is_map_key(body, "error") and is_map_key(body, "error_detail"),
        do: {:error, %{status: status, error: body["error"], error_detail: body["error_detail"]}}
