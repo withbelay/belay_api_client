@@ -7,6 +7,9 @@ on:
     - cron: '0 16 * * 1-5'
   push:
     branches: [main]
+  # FIXME: TEMP
+  pull_request:
+    branches: [main]
 
 env:
   BELAY_API_URL: ${{ secrets.BELAY_API_URL }}
@@ -46,11 +49,5 @@ jobs:
       - name: Install mix dependencies
         run: mix deps.get
 
-      # FIXME: Apply this
-      # - name: Install 1Password CLI
-      #   uses: 1password/install-cli-action@v1
-
       - name: Run smoke tests
         run: mix test.smoke
-        # env:
-        #   OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
