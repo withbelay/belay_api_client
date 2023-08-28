@@ -5,6 +5,8 @@ defmodule BelayApiClient do
   alias Decimal
   alias Tesla.Client
 
+  @token_cache_name :belay_api_cache
+
   @doc """
   Create a Tesla client for calls against BelayApi for the given client_id and client_secret
 
@@ -29,15 +31,14 @@ defmodule BelayApiClient do
   Caches the token in the configured Cachex cache.
   """
   def fetch_cached_token(client_id, client_secret) do
-    token_cache_name = Application.get_env(:belay_api_client, :token_cache_name, :belay_api_cache)
-    token_id = :"#{__MODULE__}.#{client_id}"
+    token_id = "#{__MODULE__}.#{client_id}"
 
-    case Cachex.fetch(token_cache_name, token_id, fn -> fetch_token(client_id, client_secret) end) do
+    case Cachex.fetch(@token_cache_name, token_id, fn -> fetch_token(client_id, client_secret) end) do
       {:ok, token_map} ->
         {:ok, token_map}
 
       {:commit, %{expires_in: expires_in} = token_map} ->
-        Cachex.expire(token_cache_name, token_id, expires_in)
+        Cachex.expire(@token_cache_name, token_id, expires_in)
         {:ok, token_map}
 
       {_, response} ->
