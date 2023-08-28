@@ -42,8 +42,8 @@ defmodule BelayApiClient.MixProject do
     [
       setup: ["deps.get"],
       "test.int": ["test --include integration"],
-      "test.ext": ["test --include external"],
-      "test.all": ["test --include external --include integration"]
+      "test.smoke": ["test --include smoke"],
+      "test.all": ["test --include smoke --include integration"]
     ]
   end
 
@@ -55,7 +55,7 @@ defmodule BelayApiClient.MixProject do
       test: :test,
       "test.all": :test,
       "test.int": :test,
-      "test.ext": :test
+      "test.smoke": :test
     ]
   end
 end

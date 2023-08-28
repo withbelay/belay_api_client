@@ -2,6 +2,5 @@ export BELAY_ALPACA__AUTH0__CLIENT_ID=???
 export BELAY_ALPACA__AUTH0__CLIENT_SECRET=???
 
 # Defaults
-export BELAY_API_URL=http://localhost:4000
-export BELAY_API_OFFERINGS=ws://localhost:4000
+export BELAY_API_BASE_URL=localhost:4000
 export BELAY_API_PARTNER_ID=belay_alpaca
