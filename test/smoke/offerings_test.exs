@@ -11,8 +11,8 @@ defmodule Smoke.OfferingsTest do
     opts = Application.get_all_env(:belay_api_client)
     client_id = Keyword.fetch!(opts, :client_id)
     client_secret = Keyword.fetch!(opts, :client_secret)
+    host = Keyword.fetch!(opts, :ws_url)
 
-    host = "ws://localhost:4000"
     {:commit, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
 
     start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym]})
