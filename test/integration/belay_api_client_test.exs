@@ -7,7 +7,6 @@ defmodule Integration.BelayApiClientTest do
   @investor_id "b6df1a1f-b7d5-479f-9a1f-c79bead97203"
 
   describe "integration" do
-
     test "fetch_token" do
       {client_id, client_secret} = get_real_ids()
 

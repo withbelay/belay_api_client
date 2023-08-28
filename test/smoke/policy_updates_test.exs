@@ -25,7 +25,8 @@ defmodule Smoke.PolicyUpdatesTest do
   test "foo", acc do
     {:ok, client} = BelayApiClient.client(acc.client_id, acc.client_secret)
 
-    assert {:ok, %{"policy_id" => policy_id}} = BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42)
+    assert {:ok, %{"policy_id" => policy_id}} =
+             BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42)
 
     assert_receive {"policy_updates", "policy_update:requested", %{"policy_id" => ^policy_id}}
   end
