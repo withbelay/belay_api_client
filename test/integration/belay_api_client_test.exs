@@ -7,7 +7,6 @@ defmodule Integration.BelayApiClientTest do
   @investor_id "b6df1a1f-b7d5-479f-9a1f-c79bead97203"
 
   describe "integration" do
-
     test "fetch_token" do
       {client_id, client_secret} = get_real_ids()
 
@@ -22,7 +21,9 @@ defmodule Integration.BelayApiClientTest do
 
     test "fetch_investor_id" do
       client = create_real_client()
-      assert {:ok, :not_found} == BelayApiClient.fetch_investor_id(client, @partner_id, "some_email")
+
+      assert {:error, %{error: "not_found", status: 404, error_detail: "Investor not found"}} ==
+               BelayApiClient.fetch_investor_id(client, @partner_id, "some_email")
     end
 
     test "fetch_policies" do

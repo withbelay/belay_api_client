@@ -225,7 +225,8 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(404, Jason.encode!(expected_body))
       end)
 
-      assert {:error, %{error: "invalid_id", status: 404, error_detail: "Investor ID supplied is invalid"}} == BelayApiClient.fetch_investor_token(client, @investor_id)
+      assert {:error, %{error: "invalid_id", status: 404, error_detail: "Investor ID supplied is invalid"}} ==
+               BelayApiClient.fetch_investor_token(client, @investor_id)
     end
 
     test "returns unexpected on other statuses", %{bypass: bypass, client: client} do
