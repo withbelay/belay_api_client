@@ -2,6 +2,7 @@ name: Smoke Tests
 
 on:
   workflow_dispatch:
+  repository_dispatch:
   schedule:
       # Once a day at 12pm EST
     - cron: '0 16 * * 1-5'
