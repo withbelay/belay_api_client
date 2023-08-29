@@ -2,7 +2,9 @@ name: Smoke Tests
 
 on:
   workflow_dispatch:
+  # Allow workflow to be ran via API
   repository_dispatch:
+    types: [run_smoke_tests]
   schedule:
       # Once a day at 12pm EST
     - cron: '0 16 * * 1-5'
