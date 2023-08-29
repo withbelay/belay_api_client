@@ -52,3 +52,9 @@ jobs:
 
       - name: Run smoke tests
         run: mix test.smoke
+
+      - name: Notify Slack
+        uses: craftech-io/slack-action@v1
+        if: always()
+        with:
+          slack_webhook_url: ${{ secrets.SLACK_DEVELOPMENT_WEBHOOK_URL }}
