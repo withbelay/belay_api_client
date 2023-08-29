@@ -2,6 +2,12 @@ name: Smoke Tests
 
 on:
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      BELAY_API_AUTH0_CLIENT_ID:
+        required: true
+      BELAY_API_AUTH0_CLIENT_SECRET:
+        required: true
   schedule:
       # Once a day at 12pm EST
     - cron: '0 16 * * 1-5'
