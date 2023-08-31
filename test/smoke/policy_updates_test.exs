@@ -60,6 +60,7 @@ defmodule Smoke.PolicyUpdatesTest do
 
       # Fetch the policies owned for investor_id and make sure we see the new policy there
       assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)
+
       assert Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
 
       # FIXME: We need to write a test that sells the stock, and makes sure qty changed gets invoked or doesn't depending on the market
@@ -97,7 +98,8 @@ defmodule Smoke.PolicyUpdatesTest do
       # a policy failure due to the purchase_limit_price being exceeded
       purchase_limit_price = Float.to_string(0.01)
 
-      assert {:ok, %{"policy_id" => policy_id}} = BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
+      assert {:ok, %{"policy_id" => policy_id}} =
+               BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
 
       assert_receive {"policy_updates", "policy_update:requested", %{"policy_id" => ^policy_id}}
 
@@ -105,6 +107,7 @@ defmodule Smoke.PolicyUpdatesTest do
 
       # Fetch the policies owned for investor_id and make sure we see the new policy there
       assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)
+
       refute Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
     end
   end
