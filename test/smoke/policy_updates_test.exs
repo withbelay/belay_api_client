@@ -4,6 +4,8 @@ defmodule Smoke.PolicyUpdatesTest do
 
   alias BelayApiClient.PartnerSocket
 
+  require Logger
+
   @sym "AAPL"
 
   setup _ do
@@ -30,6 +32,14 @@ defmodule Smoke.PolicyUpdatesTest do
       # Fetch a investor that hasn't purchased a policy
       investor_id = fetch_investor_id(client)
 
+      on_exit(fn ->
+        # To ensure on next run we always use a fresh smoke test investor, close the one used
+        Logger.info("Closing account: #{investor_id}")
+
+        {:ok, _} = Alpaca.create_order(@sym, "-1", investor_id)
+        {:ok, _} = Alpaca.close_account(investor_id)
+      end)
+
       # Buy 1 share of the stock we are about to get a policy on
       {:ok, _} = Alpaca.create_order(@sym, "1", investor_id)
 
@@ -41,16 +51,17 @@ defmodule Smoke.PolicyUpdatesTest do
       qty = 1.0
       # FIXME: This shouldn't be necessary, we shouldn't be returning the money map
       strike = Float.to_string(offering["strike"]["amount"] / 100)
+      purchase_limit_price = Float.to_string(offering["price"]["amount"] * 1.1 / 100)
 
       assert {:ok, %{"policy_id" => policy_id}} =
-               BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike)
+               BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
 
       assert_receive {"policy_updates", "policy_update:requested", %{"policy_id" => ^policy_id}}
 
       assert_receive {"policy_updates", "policy_update:activated", %{"policy_id" => ^policy_id}}
 
       # Fetch the policies owned for @investor_id and make sure we see the new policy there
-      assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, @investor_id)
+      assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)
 
       assert Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
 
