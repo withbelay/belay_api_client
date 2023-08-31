@@ -4,8 +4,9 @@ defmodule Alpaca do
   Note: Not to be used in prod and dev
   """
 
-  def get_accounts do
-    with {:ok, %Tesla.Env{status: 200, body: body}} <- Tesla.get(client(), "/v1/accounts") do
+  def get_active_smoke_accounts do
+    with {:ok, %Tesla.Env{status: 200, body: body}} <-
+           Tesla.get(client(), "/v1/accounts?status=ACTIVE&query=smoke_test") do
       {:ok, body}
     end
   end
@@ -54,21 +55,21 @@ defmodule Alpaca do
                }
              ]
            }),
-           {:ok, %Tesla.Env{status: 200, body: %{"id" => relationship_id}}} <-
-            Tesla.post(client, "/v1/accounts/#{account_id}/ach_relationships", %{
-              account_owner_name: "Awesome Alpaca",
-              bank_account_type: "CHECKING",
-              bank_account_number: "32131231abc",
-              bank_routing_number: "121000358",
-              nickname: "Bank of America Checking"
-            }),
-          {:ok, _} <-
-            Tesla.post(client, "/v1/accounts/#{account_id}/transfers", %{
-              transfer_type: "ach",
-              relationship_id: relationship_id,
-              amount: "500.00",
-              direction: "INCOMING"
-            })do
+         {:ok, %Tesla.Env{status: 200, body: %{"id" => relationship_id}}} <-
+           Tesla.post(client, "/v1/accounts/#{account_id}/ach_relationships", %{
+             account_owner_name: "Awesome Alpaca",
+             bank_account_type: "CHECKING",
+             bank_account_number: "32131231abc",
+             bank_routing_number: "121000358",
+             nickname: "Bank of America Checking"
+           }),
+         {:ok, _} <-
+           Tesla.post(client, "/v1/accounts/#{account_id}/transfers", %{
+             transfer_type: "ach",
+             relationship_id: relationship_id,
+             amount: "500.00",
+             direction: "INCOMING"
+           }) do
       :ok
     end
   end
@@ -88,7 +89,8 @@ defmodule Alpaca do
   end
 
   def close_account(investor_id) do
-    with {:ok, %Tesla.Env{status: 204, body: body}} <- Tesla.post(client(), "/v1/accounts/#{investor_id}/actions/close", %{}) do
+    with {:ok, %Tesla.Env{status: 204, body: body}} <-
+           Tesla.post(client(), "/v1/accounts/#{investor_id}/actions/close", %{}) do
       {:ok, body}
     end
   end
@@ -104,5 +106,5 @@ defmodule Alpaca do
     ])
   end
 
-  defp rand_email, do: "smoke_test_email#{System.unique_integer([:positive])}@email.com"
+  defp rand_email, do: "smoke_test_email#{UUID.uuid4(:hex)}@email.com"
 end

@@ -76,7 +76,7 @@ defmodule Smoke.PolicyUpdatesTest do
   end
 
   defp fetch_investor_id(client) do
-    {:ok, investor_accounts} = Alpaca.get_accounts()
+    {:ok, investor_accounts} = Alpaca.get_active_smoke_accounts()
     {:ok, policies} = BelayApiClient.fetch_policies(client)
 
     policy_investors = Enum.map(policies, & &1.partner_investor_id)
