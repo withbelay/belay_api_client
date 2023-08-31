@@ -83,17 +83,26 @@ defmodule BelayApiClient do
   end
 
   @doc """
-  Fetch policies for the given investor
+  Fetch all partner policies
   """
-  def fetch_policies(%Client{} = client, investor_id) do
+  def fetch_policies(%Client{} = client) do
     case Tesla.get(client, "/api/policies") do
       {:ok, %Tesla.Env{status: 200, body: policies}} ->
-        policies = Enum.filter(policies, fn policy -> policy["investor_account_id"] == investor_id end)
-
         {:ok, policies}
 
       response ->
         parse_error(response)
+    end
+  end
+
+  @doc """
+  Fetch policies for the given investor
+  """
+  def fetch_policies(%Client{} = client, investor_id) do
+    with {:ok, partner_policies} <- fetch_policies(client) do
+      policies = Enum.filter(partner_policies, fn policy -> policy["investor_account_id"] == investor_id end)
+
+      {:ok, policies}
     end
   end
 
