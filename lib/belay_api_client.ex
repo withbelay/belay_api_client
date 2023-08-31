@@ -109,7 +109,7 @@ defmodule BelayApiClient do
   @doc """
   Buy a policy for the given investor
   """
-  def buy_policy(%Client{} = client, investor_id, sym, expiration, qty, strike) do
+  def buy_policy(%Client{} = client, investor_id, sym, expiration, qty, strike, purchase_limit_price) do
     policy = %{
       "sym" => sym,
       "expiration" => expiration,
@@ -117,7 +117,7 @@ defmodule BelayApiClient do
       "qty" => qty,
       "strike" => strike,
       "partner_investor_id" => investor_id,
-      "purchase_limit_price" => strike
+      "purchase_limit_price" => purchase_limit_price
     }
 
     case Tesla.post(client, "/api/policies", policy) do

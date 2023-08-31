@@ -253,7 +253,7 @@ defmodule BelayApiClientTest do
       end)
 
       assert {:ok, expected_body} ==
-               BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42)
+               BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42, 100)
     end
   end
 
