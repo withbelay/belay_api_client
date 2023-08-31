@@ -53,7 +53,7 @@ defmodule BelayApiClient do
     url = Application.fetch_env!(:belay_api_client, :api_url)
     client = Tesla.client([{Tesla.Middleware.BaseUrl, url}, Tesla.Middleware.JSON])
 
-    case(Tesla.post(client, "/api/oauth/token", %{client_id: client_id, client_secret: client_secret})) do
+    case Tesla.post(client, "/api/oauth/token", %{client_id: client_id, client_secret: client_secret}) do
       {:ok, %Tesla.Env{status: 200, body: %{"access_token" => access_token, "expires_in" => expires_in}}} ->
         {:commit, %{access_token: access_token, expires_in: expires_in}}
 
@@ -66,7 +66,7 @@ defmodule BelayApiClient do
   Fetch an investor token from BelayApi for the given client_id and client_secret.
   """
   def fetch_investor_token(client, investor_id) do
-    case(Tesla.get(client, "/api/investors/#{investor_id}/token")) do
+    case Tesla.get(client, "/api/investors/#{investor_id}/token") do
       {:ok, %Tesla.Env{status: 200, body: %{"token" => token}}} -> {:ok, %{token: token}}
       bad_response -> parse_error(bad_response)
     end
