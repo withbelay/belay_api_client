@@ -1,7 +1,6 @@
 defmodule Smoke.PolicyUpdatesTest do
   use ExUnit.Case, async: false
   use AssertEventually, timeout: 1000, interval: 5
-  @moduletag :smoke
 
   alias BelayApiClient.PartnerSocket
 
@@ -22,40 +21,58 @@ defmodule Smoke.PolicyUpdatesTest do
     %{token: token, host: host, pid: pid, client_id: client_id, client_secret: client_secret}
   end
 
-  test "buy policy, push until activated, then sell some of the stock", acc do
-    {:ok, client} = BelayApiClient.client(acc.client_id, acc.client_secret)
+  describe "when during market hours" do
+    @describetag :smoke_open_hours
 
-    # Fetch a investor that hasn't purchased a policy
-    investor_id = fetch_investor_id(client)
+    test "buy policy and insure activation", context do
+      {:ok, client} = BelayApiClient.client(context.client_id, context.client_secret)
 
-    # Buy 1 share of the stock we are about to get a policy on
-    {:ok, _} = Alpaca.create_order(@sym, "1", investor_id)
+      # Fetch a investor that hasn't purchased a policy
+      investor_id = fetch_investor_id(client)
 
-    # Fetch first offering
-    assert_receive {"offerings:#{@sym}", :joined, [offering | _]}
+      # Buy 1 share of the stock we are about to get a policy on
+      {:ok, _} = Alpaca.create_order(@sym, "1", investor_id)
 
-    # Translate data types
-    expiration = offering["expiration"]
-    qty = 1.0
-    # FIXME: This shouldn't be necessary, we shouldn't be returning the money map
-    strike = Float.to_string(offering["strike"]["amount"] / 100)
+      # Fetch first offering
+      assert_receive {"offerings:#{@sym}", :joined, [offering | _]}
 
-    assert {:ok, %{"policy_id" => policy_id}} =
-             BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike)
+      # Translate data types
+      expiration = offering["expiration"]
+      qty = 1.0
+      # FIXME: This shouldn't be necessary, we shouldn't be returning the money map
+      strike = Float.to_string(offering["strike"]["amount"] / 100)
 
-    assert_receive {"policy_updates", "policy_update:requested", %{"policy_id" => ^policy_id}}
+      assert {:ok, %{"policy_id" => policy_id}} =
+               BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike)
 
-    assert_receive {"policy_updates", "policy_update:activated", %{"policy_id" => ^policy_id}}
+      assert_receive {"policy_updates", "policy_update:requested", %{"policy_id" => ^policy_id}}
 
-    # Fetch the policies owned for @investor_id and make sure we see the new policy there
-    assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, @investor_id)
-    assert Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
+      assert_receive {"policy_updates", "policy_update:activated", %{"policy_id" => ^policy_id}}
 
-    # FIXME: We need to write a test that sells the stock, and makes sure qty changed gets invoked or doesn't depending on the market
-    # {:ok, _} = Alpaca.create_order(@sym, "-0.5", @investor_id)
-    # if sym price > policy_strike, assert policy qty is the same
-    # if sym price < policy_strike, assert policy qty is policy qty - qty sold
-    # assert_receive {"policy_updates", "policy_update:qty_changed", %{"policy_id" => ^policy_id}}
+      # Fetch the policies owned for @investor_id and make sure we see the new policy there
+      assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, @investor_id)
+
+      assert Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
+
+      # FIXME: We need to write a test that sells the stock, and makes sure qty changed gets invoked or doesn't depending on the market
+      # {:ok, _} = Alpaca.create_order(@sym, "-0.5", @investor_id)
+      # if sym price > policy_strike, assert policy qty is the same
+      # if sym price < policy_strike, assert policy qty is policy qty - qty sold
+      # assert_receive {"policy_updates", "policy_update:qty_changed", %{"policy_id" => ^policy_id}}
+    end
+
+    # FIXME
+    test "check a policy purchase call respects a purchase limit price being surpassed", context do
+      assert true
+    end
+  end
+
+  describe "when off market hours" do
+    @describetag :smoke_closed_hours
+
+    # FIXME
+    test "when off market hours, can not buy a policy" do
+    end
   end
 
   defp fetch_investor_id(client) do
