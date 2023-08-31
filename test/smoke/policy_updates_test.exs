@@ -34,8 +34,6 @@ defmodule Smoke.PolicyUpdatesTest do
 
       on_exit(fn ->
         # To ensure on next run we always use a fresh smoke test investor, close the one used
-        Logger.info("Closing account: #{investor_id}")
-
         {:ok, _} = Alpaca.create_order(@sym, "-1", investor_id)
         {:ok, _} = Alpaca.close_account(investor_id)
       end)
@@ -60,29 +58,54 @@ defmodule Smoke.PolicyUpdatesTest do
 
       assert_receive {"policy_updates", "policy_update:activated", %{"policy_id" => ^policy_id}}
 
-      # Fetch the policies owned for @investor_id and make sure we see the new policy there
+      # Fetch the policies owned for investor_id and make sure we see the new policy there
       assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)
-
       assert Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
 
       # FIXME: We need to write a test that sells the stock, and makes sure qty changed gets invoked or doesn't depending on the market
-      # {:ok, _} = Alpaca.create_order(@sym, "-0.5", @investor_id)
+      # {:ok, _} = Alpaca.create_order(@sym, "-0.5", investor_id)
       # if sym price > policy_strike, assert policy qty is the same
       # if sym price < policy_strike, assert policy qty is policy qty - qty sold
       # assert_receive {"policy_updates", "policy_update:qty_changed", %{"policy_id" => ^policy_id}}
     end
 
-    # FIXME
     test "check a policy purchase call respects a purchase limit price being surpassed", context do
-      assert true
-    end
-  end
+      {:ok, client} = BelayApiClient.client(context.client_id, context.client_secret)
 
-  describe "when off market hours" do
-    @describetag :smoke_closed_hours
+      # Fetch a investor that hasn't purchased a policy
+      investor_id = fetch_investor_id(client)
 
-    # FIXME
-    test "when off market hours, can not buy a policy" do
+      on_exit(fn ->
+        # To ensure on next run we always use a fresh smoke test investor, close the one used
+        {:ok, _} = Alpaca.create_order(@sym, "-1", investor_id)
+        {:ok, _} = Alpaca.close_account(investor_id)
+      end)
+
+      # Buy 1 share of the stock we are about to get a policy on
+      {:ok, _} = Alpaca.create_order(@sym, "1", investor_id)
+
+      # Fetch first offering
+      assert_receive {"offerings:#{@sym}", :joined, [offering | _]}
+
+      # Translate data types
+      expiration = offering["expiration"]
+      qty = 1.0
+      # FIXME: This shouldn't be necessary, we shouldn't be returning the money map
+      strike = Float.to_string(offering["strike"]["amount"] / 100)
+
+      # Normally purchase_limit_price would be near the price of the offering, but, here we want to set it to something that will force
+      # a policy failure due to the purchase_limit_price being exceeded
+      purchase_limit_price = Float.to_string(0.01)
+
+      assert {:ok, %{"policy_id" => policy_id}} = BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
+
+      assert_receive {"policy_updates", "policy_update:requested", %{"policy_id" => ^policy_id}}
+
+      refute_receive {"policy_updates", "policy_update:activated", %{"policy_id" => ^policy_id}}
+
+      # Fetch the policies owned for investor_id and make sure we see the new policy there
+      assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)
+      refute Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
     end
   end
 
@@ -90,7 +113,7 @@ defmodule Smoke.PolicyUpdatesTest do
     {:ok, investor_accounts} = Alpaca.get_active_smoke_accounts()
     {:ok, policies} = BelayApiClient.fetch_policies(client)
 
-    policy_investors = Enum.map(policies, & &1.partner_investor_id)
+    policy_investors = Enum.map(policies, & &1["partner_investor_id"])
 
     investor_id =
       investor_accounts
