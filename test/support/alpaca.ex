@@ -67,7 +67,7 @@ defmodule Alpaca do
            Tesla.post(client, "/v1/accounts/#{account_id}/transfers", %{
              transfer_type: "ach",
              relationship_id: relationship_id,
-             amount: "500.00",
+             amount: "10000.00",
              direction: "INCOMING"
            }) do
       :ok
