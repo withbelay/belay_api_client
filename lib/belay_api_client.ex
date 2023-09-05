@@ -31,18 +31,12 @@ defmodule BelayApiClient do
   Caches the token in the configured Cachex cache.
   """
   def fetch_cached_token(client_id, client_secret) do
-    token_id = "#{__MODULE__}.#{client_id}"
+    case Application.fetch_env(:belay_api_client, :cached_token) do
+      {:ok, token} ->
+        {:ok, %{access_token: token}}
 
-    case Cachex.fetch(@token_cache_name, token_id, fn -> fetch_token(client_id, client_secret) end) do
-      {:ok, token_map} ->
-        {:ok, token_map}
-
-      {:commit, %{expires_in: expires_in} = token_map} ->
-        Cachex.expire(@token_cache_name, token_id, expires_in)
-        {:ok, token_map}
-
-      {_, response} ->
-        {:error_fetching_token, response}
+      :error ->
+        fetch_token_from_cachex(client_id, client_secret)
     end
   end
 
@@ -114,6 +108,22 @@ defmodule BelayApiClient do
     case Tesla.post(client, "/api/policies", policy) do
       {:ok, %Tesla.Env{status: 200, body: policy_request}} -> {:ok, policy_request}
       response -> parse_error(response)
+    end
+  end
+
+  defp fetch_token_from_cachex(client_id, client_secret) do
+    token_id = "#{__MODULE__}.#{client_id}"
+
+    case Cachex.fetch(@token_cache_name, token_id, fn -> fetch_token(client_id, client_secret) end) do
+      {:ok, token_map} ->
+        {:ok, token_map}
+
+      {:commit, %{expires_in: expires_in} = token_map} ->
+        Cachex.expire(@token_cache_name, token_id, expires_in)
+        {:ok, token_map}
+
+      {_, response} ->
+        {:error_fetching_token, response}
     end
   end
 
