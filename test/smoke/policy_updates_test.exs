@@ -26,7 +26,7 @@ defmodule Smoke.PolicyUpdatesTest do
   describe "when during market hours" do
     @describetag :smoke_open_hours
 
-    test "buy policy and insure activation", context do
+    test "buy policy and ensure activation", context do
       {:ok, client} = BelayApiClient.client(context.client_id, context.client_secret)
 
       # Fetch a investor that hasn't purchased a policy
@@ -103,9 +103,11 @@ defmodule Smoke.PolicyUpdatesTest do
 
       assert_receive {"policy_updates", "policy_update:requested", %{"policy_id" => ^policy_id}}
 
+      # FIXME: We need to add a assert_receive on a policy failed update, our code in belay-api currently does not emit it
+      # assert_receive {"policy_updates", "policy_update:failed", %{"policy_id" => ^policy_id}}
       refute_receive {"policy_updates", "policy_update:activated", %{"policy_id" => ^policy_id}}
 
-      # Fetch the policies owned for investor_id and make sure we see the new policy there
+      # Fetch the policies owned for investor_id and make sure we don't see the new policy there
       assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)
 
       refute Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
