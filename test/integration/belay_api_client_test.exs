@@ -44,7 +44,7 @@ defmodule Integration.BelayApiClientTest do
 
     test "buy_policy" do
       client = create_real_client()
-      assert {:ok, policy} = BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42)
+      assert {:ok, policy} = BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42, 100)
 
       assert %{
                "expiration" => "2023-11-23",
@@ -57,7 +57,7 @@ defmodule Integration.BelayApiClientTest do
                "sym" => "AAPL"
              } = policy
 
-      #      assert {:ok, ^policy} = BelayApiClient.buy_policy(@investor_id, "AAPL", "2023-11-23", 10, 42)
+      #      assert {:ok, ^policy} = BelayApiClient.buy_policy(@investor_id, "AAPL", "2023-11-23", 10, 42, 100)
     end
   end
 
