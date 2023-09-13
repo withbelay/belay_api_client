@@ -262,7 +262,7 @@ defmodule BelayApiClientTest do
 
       assert {:ok,
               %{"market_value" => 1.0, "qty" => 1.0, "sym" => "AAPL", "unrealized_pl" => 1.0, "unrealized_plpc" => 0.5}} ==
-               BelayApiClient.fetch_investor_holdings(client, @partner_id, @investor_id)
+               BelayApiClient.fetch_investor_holdings(client, @investor_id)
     end
 
     test "returns forbidden on 403", %{bypass: bypass, client: client} do
@@ -277,7 +277,7 @@ defmodule BelayApiClientTest do
       assert {
                :error,
                %{error: "unprocessable", error_detail: "We can't process your request", status: 403}
-             } == BelayApiClient.fetch_investor_holdings(client, @partner_id, @investor_id)
+             } == BelayApiClient.fetch_investor_holdings(client, @investor_id)
     end
 
     test "returns not found on 404", %{bypass: bypass, client: client} do
@@ -290,7 +290,7 @@ defmodule BelayApiClientTest do
       end)
 
       assert {:error, %{error: "invalid_id", status: 404, error_detail: "Investor ID supplied is invalid"}} ==
-               BelayApiClient.fetch_investor_holdings(client, @partner_id, @investor_id)
+               BelayApiClient.fetch_investor_holdings(client, @investor_id)
     end
 
     test "returns unexpected on other statuses", %{bypass: bypass, client: client} do
@@ -300,7 +300,23 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(418, Jason.encode!("No coffee, just tea"))
       end)
 
-      assert {:error, %{status: 418}} == BelayApiClient.fetch_investor_holdings(client, @partner_id, @investor_id)
+      assert {:error, %{status: 418}} == BelayApiClient.fetch_investor_holdings(client, @investor_id)
+    end
+  end
+
+  describe "fetch_market_clock" do
+    setup :create_client
+
+    test "returns market clock", %{bypass: bypass, client: client} do
+      expected_body = %{"is_open" => true, "opens_in" => 0}
+
+      Bypass.expect_once(bypass, "GET", "/api/market/clock", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(200, Jason.encode!(expected_body))
+      end)
+
+      assert {:ok, %{is_open: true, opens_in: 0}} == BelayApiClient.fetch_market_clock(client)
     end
   end
 

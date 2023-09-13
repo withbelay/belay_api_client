@@ -79,7 +79,7 @@ defmodule BelayApiClient do
   @doc """
   Fetch the investor_id for the given email address
   """
-  def fetch_investor_holdings(%Client{} = client, partner_id, investor_id) do
+  def fetch_investor_holdings(%Client{} = client, investor_id) do
     case Tesla.get(client, "/api/investors/#{investor_id}/holdings") do
       {:ok, %Tesla.Env{status: 200, body: %{"holdings" => holdings}}} -> {:ok, holdings}
       response -> parse_error(response)
@@ -91,7 +91,7 @@ defmodule BelayApiClient do
   """
   def fetch_market_clock(%Client{} = client) do
     case Tesla.get(client, "/api/market/clock") do
-      {:ok, %Tesla.Env{status: 200, body: %{"is_open" => is_open}}} -> {:ok, is_open}
+      {:ok, %Tesla.Env{status: 200, body: %{"is_open" => is_open, "opens_in" => opens_in}}} -> {:ok, %{is_open: is_open, opens_in: opens_in}}
       response -> parse_error(response)
     end
   end

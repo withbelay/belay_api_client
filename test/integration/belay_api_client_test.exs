@@ -41,13 +41,18 @@ defmodule Integration.BelayApiClientTest do
       client = create_real_client()
 
       assert {:error, %{error: "not_found", status: 404, error_detail: "Investor not found"}} ==
-               BelayApiClient.fetch_holdings(client, @partner_id, "some id")
+               BelayApiClient.fetch_investor_holdings(client, "some id")
     end
 
     test "fetch_market_clock" do
       client = create_real_client()
 
-      assert {:ok, bool} = BelayApiClient.fetch_market_clock(client)
+      assert {:ok, %{is_open: is_open, opens_in: opens_in}} = BelayApiClient.fetch_market_clock(client)
+
+      case is_open do
+        true -> assert opens_in == 0
+        false -> assert opens_in > 0
+      end
     end
 
     test "fetch_policies" do
