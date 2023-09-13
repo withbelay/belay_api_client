@@ -91,8 +91,11 @@ defmodule BelayApiClient do
   """
   def fetch_market_clock(%Client{} = client) do
     case Tesla.get(client, "/api/market/clock") do
-      {:ok, %Tesla.Env{status: 200, body: %{"is_open" => is_open, "opens_in" => opens_in}}} -> {:ok, %{is_open: is_open, opens_in: opens_in}}
-      response -> parse_error(response)
+      {:ok, %Tesla.Env{status: 200, body: %{"is_open" => is_open, "opens_in" => opens_in}}} ->
+        {:ok, %{is_open: is_open, opens_in: opens_in}}
+
+      response ->
+        parse_error(response)
     end
   end
 
