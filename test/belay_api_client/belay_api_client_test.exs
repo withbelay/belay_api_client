@@ -240,6 +240,70 @@ defmodule BelayApiClientTest do
     end
   end
 
+  describe "fetch_investor_holdings" do
+    setup :create_client
+
+    test "returns holdings", %{bypass: bypass, client: client} do
+      expected_body = %{
+        "holdings" => %{
+          "qty" => 1.0,
+          "sym" => "AAPL",
+          "market_value" => 1.0,
+          "unrealized_pl" => 1.0,
+          "unrealized_plpc" => 0.5
+        }
+      }
+
+      Bypass.expect_once(bypass, "GET", "/api/investors/#{@investor_id}/holdings", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(200, Jason.encode!(expected_body))
+      end)
+
+      assert {:ok,
+              %{"market_value" => 1.0, "qty" => 1.0, "sym" => "AAPL", "unrealized_pl" => 1.0, "unrealized_plpc" => 0.5}} ==
+               BelayApiClient.fetch_investor_holdings(client, @partner_id, @investor_id)
+    end
+
+    test "returns forbidden on 403", %{bypass: bypass, client: client} do
+      expected_body = %{"error" => "unprocessable", "error_detail" => "We can't process your request"}
+
+      Bypass.expect_once(bypass, "GET", "/api/investors/#{@investor_id}/holdings", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(403, Jason.encode!(expected_body))
+      end)
+
+      assert {
+               :error,
+               %{error: "unprocessable", error_detail: "We can't process your request", status: 403}
+             } == BelayApiClient.fetch_investor_holdings(client, @partner_id, @investor_id)
+    end
+
+    test "returns not found on 404", %{bypass: bypass, client: client} do
+      expected_body = %{"error" => "invalid_id", "error_detail" => "Investor ID supplied is invalid"}
+
+      Bypass.expect_once(bypass, "GET", "/api/investors/#{@investor_id}/holdings", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(404, Jason.encode!(expected_body))
+      end)
+
+      assert {:error, %{error: "invalid_id", status: 404, error_detail: "Investor ID supplied is invalid"}} ==
+               BelayApiClient.fetch_investor_holdings(client, @partner_id, @investor_id)
+    end
+
+    test "returns unexpected on other statuses", %{bypass: bypass, client: client} do
+      Bypass.expect_once(bypass, "GET", "/api/investors/#{@investor_id}/holdings", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(418, Jason.encode!("No coffee, just tea"))
+      end)
+
+      assert {:error, %{status: 418}} == BelayApiClient.fetch_investor_holdings(client, @partner_id, @investor_id)
+    end
+  end
+
   describe "buy_policy" do
     setup :create_client
 
