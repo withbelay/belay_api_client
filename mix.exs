@@ -28,7 +28,6 @@ defmodule BelayApiClient.MixProject do
     [
       {:assert_eventually, "~> 1.0.0", only: :test},
       {:bypass, "~> 2.1", only: :test},
-      {:cachex, "~> 3.5"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:elixir_uuid, "~> 1.2"},

@@ -3,9 +3,8 @@ defmodule BelayApiClient.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [{Cachex, name: :belay_api_cache}]
     opts = [strategy: :one_for_one, name: BelayApiClient.Supervisor]
 
-    Supervisor.start_link(children, opts)
+    Supervisor.start_link([], opts)
   end
 end
