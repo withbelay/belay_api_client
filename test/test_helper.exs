@@ -1,11 +1,17 @@
 # Increase assert_receive timeout for all tests since smoke and integration tests may take longer
 ExUnit.configure(assert_receive_timeout: 5_000)
 
-current_time = Time.utc_now()
+# Figure out if smoke tests are being called
 is_smoke = :smoke in ExUnit.configuration()[:include]
 
+# Figure out if market is open
+client_id = Application.fetch_env!(:belay_api_client, :client_id)
+client_secret = Application.fetch_env!(:belay_api_client, :client_secret)
+{:ok, client} = BelayApiClient.client(client_id, client_secret)
+{:ok, %{is_open: is_market_open}} = BelayApiClient.fetch_market_clock(client)
+
 cond do
-  is_smoke and Time.after?(current_time, ~T[14:30:00]) and Time.before?(current_time, ~T[21:00:00]) ->
+  is_smoke and is_market_open ->
     ExUnit.start(include: [smoke_open_hours: true], exclude: [integration: true, smoke_closed_hours: true])
 
   is_smoke ->
