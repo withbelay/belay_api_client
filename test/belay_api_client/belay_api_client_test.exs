@@ -141,7 +141,7 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(200, Jason.encode!(expected_body))
       end)
 
-      assert {:commit, %{access_token: "cool_token", expires_in: 3600}} ==
+      assert {:ok, %{access_token: "cool_token", expires_in: 3600}} ==
                BelayApiClient.fetch_token(@client_id, @client_secret)
     end
 

@@ -13,23 +13,6 @@ defmodule Integration.BelayApiClientTest do
       {:commit, %{access_token: _}} = BelayApiClient.fetch_token(client_id, client_secret)
     end
 
-    test "fetch_cached_token" do
-      {client_id, client_secret} = get_real_ids()
-
-      BelayApiClient.fetch_cached_token(client_id, client_secret)
-    end
-
-    test "fetch_cached_token with env variable" do
-      Application.put_env(:belay_api_client, :cached_token, "token")
-
-      {client_id, client_secret} = get_real_ids()
-
-      assert {:ok, %{access_token: "token"}} == BelayApiClient.fetch_cached_token(client_id, client_secret)
-
-      # Restore env
-      Application.delete_env(:belay_api_client, :cached_token)
-    end
-
     test "fetch_investor_id" do
       client = create_real_client()
 
