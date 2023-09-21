@@ -12,7 +12,7 @@ defmodule BelayApiClient do
   """
   @spec client(String.t(), String.t()) :: Tesla.Client.t()
   def client(client_id, client_secret) do
-    with {:ok, %{access_token: access_token}} <- fetch_cached_token(client_id, client_secret) do
+    with {:ok, %{access_token: access_token}} <- fetch_token(client_id, client_secret) do
       client(access_token)
     end
   end
@@ -26,20 +26,6 @@ defmodule BelayApiClient do
         [{Tesla.Middleware.Headers, [{"Authorization", "Bearer #{access_token}"}]}]
 
     {:ok, Tesla.client(middleware)}
-  end
-
-  @doc """
-  Fetch an auth token from BelayApi for the given client_id and client_secret.
-  The expires_in will be -1 to signify the fact the token is cached.
-  """
-  def fetch_cached_token(client_id, client_secret) do
-    case Application.fetch_env(:belay_api_client, :cached_token) do
-      {:ok, token} ->
-        {:ok, %{access_token: token, expires_in: -1}}
-
-      :error ->
-        fetch_token(client_id, client_secret)
-    end
   end
 
   @doc """
