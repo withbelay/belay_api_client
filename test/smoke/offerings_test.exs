@@ -6,7 +6,7 @@ defmodule Smoke.OfferingsTest do
 
   @sym "AAPL"
 
-  setup do
+  setup_all _ do
     opts = Application.get_all_env(:belay_api_client)
     client_id = Keyword.fetch!(opts, :client_id)
     client_secret = Keyword.fetch!(opts, :client_secret)
@@ -14,6 +14,10 @@ defmodule Smoke.OfferingsTest do
 
     {:ok, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
 
+    %{token: token, host: host}
+  end
+
+  setup %{token: token, host: host} do
     start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym]})
 
     :ok
