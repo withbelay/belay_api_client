@@ -14,7 +14,7 @@ defmodule Smoke.PolicyUpdatesTest do
     client_secret = Keyword.fetch!(opts, :client_secret)
     host = Keyword.fetch!(opts, :ws_url)
 
-    {:commit, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
+    {:ok, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
 
     pid = start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym]})
 
@@ -26,8 +26,8 @@ defmodule Smoke.PolicyUpdatesTest do
   describe "when during market hours" do
     @describetag :smoke_open_hours
 
-    test "buy policy and ensure activation", context do
-      {:ok, client} = BelayApiClient.client(context.client_id, context.client_secret)
+    test "buy policy and ensure activation", %{token: token} do
+      {:ok, client} = BelayApiClient.client(token)
 
       # Fetch a investor that hasn't purchased a policy
       investor_id = fetch_investor_id(client)
@@ -70,8 +70,8 @@ defmodule Smoke.PolicyUpdatesTest do
       # assert_receive {"policy_updates", "policy_update:qty_changed", %{"policy_id" => ^policy_id}}
     end
 
-    test "check a policy purchase call respects a purchase limit price being surpassed", context do
-      {:ok, client} = BelayApiClient.client(context.client_id, context.client_secret)
+    test "check a policy purchase call respects a purchase limit price being surpassed", %{token: token} do
+      {:ok, client} = BelayApiClient.client(token)
 
       # Fetch a investor that hasn't purchased a policy
       investor_id = fetch_investor_id(client)
