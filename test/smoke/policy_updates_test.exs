@@ -8,7 +8,7 @@ defmodule Smoke.PolicyUpdatesTest do
 
   @sym "AAPL"
 
-  setup _ do
+  setup_all _ do
     opts = Application.get_all_env(:belay_api_client)
     client_id = Keyword.fetch!(opts, :client_id)
     client_secret = Keyword.fetch!(opts, :client_secret)
@@ -16,11 +16,15 @@ defmodule Smoke.PolicyUpdatesTest do
 
     {:ok, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
 
-    pid = start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym]})
+    %{token: token, host: host}
+  end
+
+  setup %{token: token, host: host} do
+    start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym]})
 
     assert_receive {"policy_updates", :joined, _}
 
-    %{token: token, host: host, pid: pid, client_id: client_id, client_secret: client_secret}
+    :ok
   end
 
   describe "when during market hours" do
