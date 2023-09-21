@@ -6,19 +6,23 @@ defmodule Smoke.OfferingsTest do
 
   @sym "AAPL"
 
+  setup do
+    opts = Application.get_all_env(:belay_api_client)
+    client_id = Keyword.fetch!(opts, :client_id)
+    client_secret = Keyword.fetch!(opts, :client_secret)
+    host = Keyword.fetch!(opts, :ws_url)
+
+    {:ok, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
+
+    start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym]})
+
+    :ok
+  end
+
   describe "when during market hours" do
     @describetag :smoke_open_hours
 
     test "connect to server and see that we're getting offerings" do
-      opts = Application.get_all_env(:belay_api_client)
-      client_id = Keyword.fetch!(opts, :client_id)
-      client_secret = Keyword.fetch!(opts, :client_secret)
-      host = Keyword.fetch!(opts, :ws_url)
-
-      {:commit, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
-
-      start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym]})
-
       expected_topic = "offerings:#{@sym}"
 
       assert_receive {^expected_topic, :joined, offerings}
@@ -38,17 +42,7 @@ defmodule Smoke.OfferingsTest do
     @describetag :smoke_closed_hours
 
     test "there are no offerings" do
-      opts = Application.get_all_env(:belay_api_client)
-      client_id = Keyword.fetch!(opts, :client_id)
-      client_secret = Keyword.fetch!(opts, :client_secret)
-      host = Keyword.fetch!(opts, :ws_url)
-
-      {:commit, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
-
-      start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym]})
-
       expected_topic = "offerings:#{@sym}"
-
       assert_receive {^expected_topic, :joined, []}
     end
   end
