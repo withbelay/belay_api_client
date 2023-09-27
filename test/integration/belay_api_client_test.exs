@@ -2,6 +2,8 @@ defmodule Integration.BelayApiClientTest do
   use ExUnit.Case, async: false
 
   @moduletag :integration
+  # FIXME: Skip temporarily since this is probably eating some auth0 tokens and pushing bad data to staging
+  @moduletag :skip
 
   @partner_id Application.compile_env!(:belay_api_client, :partner_id)
   @investor_id "b6df1a1f-b7d5-479f-9a1f-c79bead97203"
