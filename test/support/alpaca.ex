@@ -21,7 +21,7 @@ defmodule Alpaca do
                phone_number: "555-666-7788",
                street_address: ["20 N San Mateo Dr"],
                city: "San Mateo",
-               state: "CA",
+               state: "MT",
                postal_code: "94401",
                country: "USA"
              },
