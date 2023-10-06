@@ -16,7 +16,6 @@ defmodule Alpaca do
          accounts <- Enum.take(accounts, num_investor_accounts) do
       {:ok, accounts}
     else
-      error -> IO.inspect(error)
       [] -> {:error, :no_investor_accounts}
       {:ok, %Tesla.Env{body: error_body}} -> {:error, error_body}
     end
