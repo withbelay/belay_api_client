@@ -1,5 +1,5 @@
 # Increase assert_receive timeout for all tests since smoke and integration tests may take longer
-ExUnit.configure(assert_receive_timeout: 5_000)
+ExUnit.configure(assert_receive_timeout: :timer.minutes(1), timeout: :timer.minutes(3))
 
 # Figure out if smoke tests are being called
 is_smoke = :smoke in ExUnit.configuration()[:include]
