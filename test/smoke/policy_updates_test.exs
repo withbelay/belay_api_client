@@ -7,6 +7,7 @@ defmodule Smoke.PolicyUpdatesTest do
   require Logger
 
   @sym "AAPL"
+  @num_of_test_cases 2
 
   setup_all _ do
     opts = Application.get_all_env(:belay_api_client)
@@ -15,6 +16,8 @@ defmodule Smoke.PolicyUpdatesTest do
     host = Keyword.fetch!(opts, :ws_url)
 
     {:ok, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
+
+    start_supervised!({AlpacaInvestors, num_investor_accounts: @num_of_test_cases})
 
     %{token: token, host: host}
   end
@@ -34,7 +37,7 @@ defmodule Smoke.PolicyUpdatesTest do
       {:ok, client} = BelayApiClient.client(token)
 
       # Fetch a investor that hasn't purchased a policy
-      investor_id = fetch_investor_id(client)
+      investor_id = AlpacaInvestors.fetch_investor()
 
       on_exit(fn ->
         # To ensure on next run we always use a fresh smoke test investor, close the one used
@@ -78,7 +81,7 @@ defmodule Smoke.PolicyUpdatesTest do
       {:ok, client} = BelayApiClient.client(token)
 
       # Fetch a investor that hasn't purchased a policy
-      investor_id = fetch_investor_id(client)
+      investor_id = AlpacaInvestors.fetch_investor()
 
       on_exit(fn ->
         # To ensure on next run we always use a fresh smoke test investor, close the one used
@@ -116,23 +119,5 @@ defmodule Smoke.PolicyUpdatesTest do
 
       refute Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
     end
-  end
-
-  defp fetch_investor_id(client) do
-    {:ok, investor_accounts} = Alpaca.get_active_smoke_accounts()
-    {:ok, policies} = BelayApiClient.fetch_policies(client)
-
-    policy_investors = Enum.map(policies, & &1["partner_investor_id"])
-
-    investor_id =
-      investor_accounts
-      |> Enum.reject(fn %{"id" => id} -> id in policy_investors end)
-      |> Enum.random()
-      |> Map.fetch!("id")
-
-    # Queue a new investor account to be created
-    Task.start_link(fn -> Alpaca.create_funded_user() end)
-
-    investor_id
   end
 end
