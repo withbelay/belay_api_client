@@ -4,10 +4,21 @@ defmodule Alpaca do
   Note: Not to be used in prod and dev
   """
 
-  def get_active_smoke_accounts do
-    with {:ok, %Tesla.Env{status: 200, body: body}} <-
-           Tesla.get(client(), "/v1/accounts?status=ACTIVE&query=smoke_test") do
-      {:ok, body}
+  @starting_cash "10000"
+
+  def get_active_smoke_accounts(num_investor_accounts \\ 5) do
+    client = client()
+
+    with {:ok, %Tesla.Env{status: 200, body: accounts}} <-
+           Tesla.get(client, "/v1/accounts?status=ACTIVE&query=smoke_test"),
+         accounts <- Stream.filter(accounts, &has_no_positions(client, &1)),
+         accounts <- Stream.filter(accounts, &has_enough_cash(client, &1)),
+         accounts <- Enum.take(accounts, num_investor_accounts) do
+      {:ok, accounts}
+    else
+      error -> IO.inspect(error)
+      [] -> {:error, :no_investor_accounts}
+      {:ok, %Tesla.Env{body: error_body}} -> {:error, error_body}
     end
   end
 
@@ -67,7 +78,7 @@ defmodule Alpaca do
            Tesla.post(client, "/v1/accounts/#{account_id}/transfers", %{
              transfer_type: "ach",
              relationship_id: relationship_id,
-             amount: "10000.00",
+             amount: @starting_cash,
              direction: "INCOMING"
            }) do
       :ok
@@ -107,4 +118,18 @@ defmodule Alpaca do
   end
 
   defp rand_email, do: "smoke_test_email#{UUID.uuid4(:hex)}@email.com"
+
+  defp has_enough_cash(client, %{"id" => id}) do
+    case Tesla.get(client, "/v1/trading/accounts/#{id}/account") do
+      {:ok, %Tesla.Env{status: 200, body: %{"cash" => @starting_cash}}} -> true
+      {:ok, %Tesla.Env{}} -> false
+    end
+  end
+
+  defp has_no_positions(client, %{"id" => id}) do
+    case Tesla.get(client, "/v1/trading/accounts/#{id}/positions") do
+      {:ok, %Tesla.Env{status: 200, body: []}} -> true
+      {:ok, %Tesla.Env{}} -> false
+    end
+  end
 end
