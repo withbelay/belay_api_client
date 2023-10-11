@@ -33,8 +33,8 @@ defmodule Smoke.OfferingsTest do
 
       assert %{
                "expiration" => expiration,
-               "price" => %{"amount" => _price, "currency" => "USD"},
-               "strike" => %{"amount" => _strike, "currency" => "USD"},
+               "price" => _,
+               "strike" => _,
                "sym" => "AAPL"
              } = hd(offerings)
 

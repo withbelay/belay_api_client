@@ -56,7 +56,7 @@ defmodule Integration.BelayApiClientTest do
                #               "policy_id" => "bdc5de70-baaf-4600-837c-f6b2963b8ba2",
                "qty" => "10",
                "status" => "pending",
-               "strike" => %{"amount" => 42, "currency" => "USD"},
+               "strike" => "0.42",
                "sym" => "AAPL"
              } = policy
 
