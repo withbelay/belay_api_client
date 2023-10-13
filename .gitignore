@@ -29,3 +29,5 @@ belay_api_client-*.tar
 
 .envrc
 .history/
+.env
+.env.staging
