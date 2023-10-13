@@ -54,9 +54,8 @@ defmodule Smoke.PolicyUpdatesTest do
       # Translate data types
       expiration = offering["expiration"]
       qty = 1.0
-      # FIXME: This shouldn't be necessary, we shouldn't be returning the money map
-      strike = Float.to_string(offering["strike"]["amount"] / 100)
-      purchase_limit_price = Float.to_string(offering["price"]["amount"] * 1.1 / 100)
+      strike = offering["strike"]
+      purchase_limit_price = String.to_float(offering["price"]) * 1.1 / 100
 
       assert {:ok, %{"policy_id" => policy_id}} =
                BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
@@ -98,8 +97,7 @@ defmodule Smoke.PolicyUpdatesTest do
       # Translate data types
       expiration = offering["expiration"]
       qty = 1.0
-      # FIXME: This shouldn't be necessary, we shouldn't be returning the money map
-      strike = Float.to_string(offering["strike"]["amount"] / 100)
+      strike = offering["strike"]
 
       # Normally purchase_limit_price would be near the price of the offering, but, here we want to set it to something that will force
       # a policy failure due to the purchase_limit_price being exceeded
