@@ -6,5 +6,5 @@ config :belay_api_client,
 
 config :belay_api_client, Alpaca,
   base_url: System.get_env("ALPACA_BASE_URL", "https://broker-api.sandbox.alpaca.markets"),
-  key: System.fetch_env!("ALPACA_KEY"),
-  secret: System.fetch_env!("ALPACA_SECRET")
+  key: System.fetch_env!("BELAYALPACA__ALPACA__KEY"),
+  secret: System.fetch_env!("BELAYALPACA__ALPACA__SECRET")

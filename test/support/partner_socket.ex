@@ -56,7 +56,7 @@ defmodule BelayApiClient.PartnerSocket do
           join(socket, "policy_updates")
 
         {:error, reason} ->
-          Logger.critical("[BelayApiClient.Offerings] Couldn't connect to Belay: #{inspect(reason)}")
+          Logger.critical("Couldn't connect to Belay: #{inspect(reason)}")
           socket
       end
 

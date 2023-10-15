@@ -14,11 +14,7 @@ on:
 env:
   BELAY_API_URL: ${{ vars.BELAY_API_URL }}
   BELAY_API_WS_URL: ${{ vars.BELAY_API_WS_URL }}
-  BELAY_API_AUTH0_CLIENT_ID: ${{ secrets.BELAY_API_AUTH0_CLIENT_ID }}
-  BELAY_API_AUTH0_CLIENT_SECRET: ${{ secrets.BELAY_API_AUTH0_CLIENT_SECRET }}
   ALPACA_BASE_URL: ${{ vars.ALPACA_BASE_URL }}
-  ALPACA_KEY: ${{ secrets.ALPACA_KEY }}
-  ALPACA_SECRET: ${{ secrets.ALPACA_SECRET }}
 
 jobs:
   build:
@@ -39,6 +35,17 @@ jobs:
         with:
           elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
+
+      - name: Load Secrets
+        uses: 1password/load-secrets-action@v1
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          BELAYALPACA__AUTH0__CLIENT_ID: op://devops-staging-api/BELAYALPACA__AUTH0__CLIENT_ID/password
+          BELAYALPACA__AUTH0__CLIENT_SECRET: op://devops-staging-api/BELAYALPACA__AUTH0__CLIENT_SECRET/password
+          BELAYALPACA__ALPACA__KEY: op://devops-staging-api/BELAYALPACA__ALPACA__KEY/password
+          BELAYALPACA__ALPACA__SECRET: op://devops-staging-api/BELAYALPACA__ALPACA__SECRET/password
 
       - name: Cache Mix
         uses: actions/cache@v3
