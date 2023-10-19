@@ -55,7 +55,7 @@ defmodule Smoke.PolicyUpdatesTest do
       expiration = offering["expiration"]
       qty = 1.0
       strike = offering["strike"]
-      purchase_limit_price = String.to_float(offering["price"]) * 1.1 / 100
+      purchase_limit_price = offering["price"] |> String.to_float() |> Kernel.*(1.1) |> Float.to_string()
 
       assert {:ok, %{"policy_id" => policy_id}} =
                BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
