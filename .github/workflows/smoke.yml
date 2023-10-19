@@ -6,12 +6,13 @@ on:
   repository_dispatch:
     types: [run_smoke_tests]
   schedule:
-      # Once a day at 12pm EST
-    - cron: '0 16 * * 1-5'
+    # Once a day at 12pm EST
+    - cron: "0 16 * * 1-5"
   push:
     branches: [main]
 
 env:
+  MIX_ENV: test
   BELAY_API_URL: ${{ vars.BELAY_API_URL }}
   BELAY_API_WS_URL: ${{ vars.BELAY_API_WS_URL }}
   ALPACA_BASE_URL: ${{ vars.ALPACA_BASE_URL }}
