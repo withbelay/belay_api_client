@@ -33,8 +33,8 @@ jobs:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           BELAYALPACA__AUTH0__CLIENT_ID: op://devops-staging-api/BELAYALPACA__AUTH0__CLIENT_ID/password
           BELAYALPACA__AUTH0__CLIENT_SECRET: op://devops-staging-api/BELAYALPACA__AUTH0__CLIENT_SECRET/password
-          BELAYALPACA__ALPACA__KEY: op://devops-staging-api/BELAYALPACA__ALPACA__KEY/password
-          BELAYALPACA__ALPACA__SECRET: op://devops-staging-api/BELAYALPACA__ALPACA__SECRET/password
+          BELAYALPACA__ALPACA__KEY: op://devops-staging-alpaca-proxy/BELAYALPACA__ALPACA__KEY/password
+          BELAYALPACA__ALPACA__SECRET: op://devops-staging-alpaca-proxy/BELAYALPACA__ALPACA__SECRET/password
 
       - name: Determine the elixir version
         run: echo "ELIXIR_VERSION=$(grep -h elixir .tool-versions | awk '{ print $2 }' | awk -F - '{print $1}')" >> $GITHUB_ENV
