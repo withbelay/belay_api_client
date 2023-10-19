@@ -120,7 +120,7 @@ defmodule Alpaca do
 
   defp has_enough_cash(client, %{"id" => id}) do
     case Tesla.get(client, "/v1/trading/accounts/#{id}/account") do
-      {:ok, %Tesla.Env{status: 200, body: %{"cash" => @starting_cash}}} -> true
+      {:ok, %Tesla.Env{status: 200, body: %{"cash_withdrawable" => @starting_cash}}} -> true
       {:ok, %Tesla.Env{}} -> false
     end
   end
