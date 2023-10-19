@@ -109,8 +109,6 @@ defmodule Alpaca do
     [base_url: base_url, key: key, secret: secret] = Application.fetch_env!(:belay_api_client, Alpaca)
     access_token = Base.encode64("#{key}:#{secret}")
 
-    IO.inspect(binding())
-
     Tesla.client([
       {Tesla.Middleware.BaseUrl, base_url},
       Tesla.Middleware.JSON,
