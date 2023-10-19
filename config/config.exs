@@ -6,6 +6,4 @@ config :belay_api_client,
   client_id: System.fetch_env!("BELAYALPACA__AUTH0__CLIENT_ID"),
   client_secret: System.fetch_env!("BELAYALPACA__AUTH0__CLIENT_SECRET")
 
-# cached_token: "your belay oauth token here"
-
 import_config "#{config_env()}.exs"
