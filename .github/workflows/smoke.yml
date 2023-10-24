@@ -3,9 +3,13 @@ name: Smoke Tests
 on:
   workflow_dispatch:
   workflow_call:
-  # Allow workflow to be ran via API
-  repository_dispatch:
-    types: [run_smoke_tests]
+    secrets:
+      OP_SERVICE_ACCOUNT_TOKEN:
+        description: 'The token for the service account that has access to the vault'
+        required: true
+      SLACK_DEVELOPMENT_WEBHOOK_URL:
+        description: 'The slack webhook url for the development channel'
+        required: true
   schedule:
     # Once a day at 12pm EST
     - cron: "0 16 * * 1-5"
