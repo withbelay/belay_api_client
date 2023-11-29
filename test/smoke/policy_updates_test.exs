@@ -13,27 +13,30 @@ defmodule Smoke.PolicyUpdatesTest do
     opts = Application.get_all_env(:belay_api_client)
     client_id = Keyword.fetch!(opts, :client_id)
     client_secret = Keyword.fetch!(opts, :client_secret)
+    partner_id = Keyword.fetch!(opts, :partner_id)
     host = Keyword.fetch!(opts, :ws_url)
 
     {:ok, %{access_token: token}} = BelayApiClient.fetch_token(client_id, client_secret)
 
     start_supervised!({AlpacaInvestors, num_investor_accounts: @num_of_test_cases})
 
-    %{token: token, host: host}
+    %{token: token, host: host, partner_id: partner_id}
   end
 
-  setup %{token: token, host: host} do
-    start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym]})
+  setup %{token: token, host: host, partner_id: partner_id} do
+    policy_updates_topic = "policy_updates:#{partner_id}"
+    offerings_topic = "offerings:#{partner_id}:#{@sym}"
 
-    assert_receive {"policy_updates", :joined, _}
+    start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym], partner_id: partner_id})
+    assert_receive {^policy_updates_topic, :joined, _}
 
-    :ok
+    %{policy_updates_topic: policy_updates_topic, offerings_topic: offerings_topic}
   end
 
   describe "when during market hours" do
     @describetag :smoke_open_hours
 
-    test "buy policy and ensure activation", %{token: token} do
+    test "buy policy and ensure activation", %{token: token, policy_updates_topic: policy_updates_topic, offerings_topic: offerings_topic} do
       {:ok, client} = BelayApiClient.client(token)
 
       # Fetch a investor that hasn't purchased a policy
@@ -49,7 +52,7 @@ defmodule Smoke.PolicyUpdatesTest do
       {:ok, _} = Alpaca.create_order(@sym, "1", investor_id)
 
       # Fetch first offering
-      assert_receive {"offerings:#{@sym}", :joined, [offering | _]}
+      assert_receive {^offerings_topic, :joined, [offering | _]}
 
       # Translate data types
       expiration = offering["expiration"]
@@ -60,9 +63,9 @@ defmodule Smoke.PolicyUpdatesTest do
       assert {:ok, %{"policy_id" => policy_id}} =
                BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
 
-      assert_receive {"policy_updates", "policy_update:requested", %{"policy_id" => ^policy_id}}
+      assert_receive {^policy_updates_topic, "policy_update:requested", %{"policy_id" => ^policy_id}}
 
-      assert_receive {"policy_updates", "policy_update:activated", %{"policy_id" => ^policy_id}}
+      assert_receive {^policy_updates_topic, "policy_update:activated", %{"policy_id" => ^policy_id}}
 
       # Fetch the policies owned for investor_id and make sure we see the new policy there
       assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)
@@ -76,7 +79,7 @@ defmodule Smoke.PolicyUpdatesTest do
       # assert_receive {"policy_updates", "policy_update:qty_changed", %{"policy_id" => ^policy_id}}
     end
 
-    test "check a policy purchase call respects a purchase limit price being surpassed", %{token: token} do
+    test "check a policy purchase call respects a purchase limit price being surpassed", %{token: token, policy_updates_topic: policy_updates_topic, offerings_topic: offerings_topic} do
       {:ok, client} = BelayApiClient.client(token)
 
       # Fetch a investor that hasn't purchased a policy
@@ -92,7 +95,7 @@ defmodule Smoke.PolicyUpdatesTest do
       {:ok, _} = Alpaca.create_order(@sym, "1", investor_id)
 
       # Fetch first offering
-      assert_receive {"offerings:#{@sym}", :joined, [offering | _]}
+      assert_receive {^offerings_topic, :joined, [offering | _]}
 
       # Translate data types
       expiration = offering["expiration"]
@@ -106,11 +109,11 @@ defmodule Smoke.PolicyUpdatesTest do
       assert {:ok, %{"policy_id" => policy_id}} =
                BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
 
-      assert_receive {"policy_updates", "policy_update:requested", %{"policy_id" => ^policy_id}}
+      assert_receive {^policy_updates_topic, "policy_update:requested", %{"policy_id" => ^policy_id}}
 
       # FIXME: We need to add a assert_receive on a policy failed update, our code in belay-api currently does not emit it
       # assert_receive {"policy_updates", "policy_update:failed", %{"policy_id" => ^policy_id}}
-      refute_receive {"policy_updates", "policy_update:activated", %{"policy_id" => ^policy_id}}
+      refute_receive {^policy_updates_topic, "policy_update:activated", %{"policy_id" => ^policy_id}}
 
       # Fetch the policies owned for investor_id and make sure we don't see the new policy there
       assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)

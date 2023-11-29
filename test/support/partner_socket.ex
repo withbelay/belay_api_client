@@ -12,21 +12,23 @@ defmodule BelayApiClient.PartnerSocket do
     test_pid = Keyword.fetch!(opts, :test_pid)
     host = Keyword.fetch!(opts, :host)
     token = Keyword.fetch!(opts, :token)
+    partner_id = Keyword.fetch!(opts, :partner_id)
     stock_universe = Keyword.fetch!(opts, :stock_universe)
 
     Slipstream.start_link(
       __MODULE__,
-      [uri: "#{host}/partner/websocket?token=#{token}", stock_universe: stock_universe, test_pid: test_pid],
+      [uri: "#{host}/partner/websocket?token=#{token}", stock_universe: stock_universe, test_pid: test_pid, partner_id: partner_id],
       name: __MODULE__
     )
   end
 
   @impl true
-  def init(uri: uri, stock_universe: stock_universe, test_pid: test_pid) do
+  def init(uri: uri, stock_universe: stock_universe, test_pid: test_pid, partner_id: partner_id) do
     socket =
       [uri: uri]
       |> connect!()
       |> assign(:test_pid, test_pid)
+      |> assign(:partner_id, partner_id)
 
     {:ok, socket, {:continue, {:await_connection, stock_universe}}}
   end
@@ -50,10 +52,10 @@ defmodule BelayApiClient.PartnerSocket do
         {:ok, socket} ->
           socket =
             Enum.reduce(stock_universe, socket, fn sym, socket ->
-              join(socket, "offerings:#{sym}")
+              join(socket, "offerings:#{socket.assigns.partner_id}:#{sym}")
             end)
 
-          join(socket, "policy_updates")
+            join(socket, "policy_updates:#{socket.assigns.partner_id}")
 
         {:error, reason} ->
           Logger.critical("Couldn't connect to Belay: #{inspect(reason)}")
