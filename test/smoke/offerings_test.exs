@@ -49,9 +49,8 @@ defmodule Smoke.OfferingsTest do
   describe "when off market hours" do
     @describetag :smoke_closed_hours
 
-    test "there are no offerings" do
-      expected_topic = "offerings:#{@sym}"
-      assert_receive {^expected_topic, :joined, []}
+    test "there are no offerings", %{offerings_topic: offerings_topic} do
+      assert_receive {^offerings_topic, :joined, []}
     end
   end
 end
