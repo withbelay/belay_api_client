@@ -3,6 +3,7 @@ defmodule Smoke.PolicyUpdatesTest do
   use AssertEventually, timeout: 1000, interval: 5
 
   alias BelayApiClient.PartnerSocket
+  alias AlpacaInvestors.AlpacaClient
 
   require Logger
 
@@ -42,14 +43,8 @@ defmodule Smoke.PolicyUpdatesTest do
       # Fetch a investor that hasn't purchased a policy
       investor_id = AlpacaInvestors.fetch_investor()
 
-      on_exit(fn ->
-        # To ensure on next run we always use a fresh smoke test investor, close the one used
-        {:ok, _} = Alpaca.create_order(@sym, "-1", investor_id)
-        {:ok, _} = Alpaca.close_account(investor_id)
-      end)
-
       # Buy 1 share of the stock we are about to get a policy on
-      {:ok, _} = Alpaca.create_order(@sym, "1", investor_id)
+      {:ok, _} = AlpacaClient.create_buy_order(@sym, "1", investor_id)
 
       # Fetch first offering
       assert_receive {^offerings_topic, :joined, [offering | _]}
@@ -73,7 +68,7 @@ defmodule Smoke.PolicyUpdatesTest do
       assert Enum.any?(received_policies, fn %{"policy_id" => received_policy_id} -> received_policy_id == policy_id end)
 
       # FIXME: We need to write a test that sells the stock, and makes sure qty changed gets invoked or doesn't depending on the market
-      # {:ok, _} = Alpaca.create_order(@sym, "-0.5", investor_id)
+      # {:ok, _} = AlpacaClient.create_order(@sym, "-0.5", investor_id)
       # if sym price > policy_strike, assert policy qty is the same
       # if sym price < policy_strike, assert policy qty is policy qty - qty sold
       # assert_receive {"policy_updates", "policy_update:qty_changed", %{"policy_id" => ^policy_id}}
@@ -85,14 +80,8 @@ defmodule Smoke.PolicyUpdatesTest do
       # Fetch a investor that hasn't purchased a policy
       investor_id = AlpacaInvestors.fetch_investor()
 
-      on_exit(fn ->
-        # To ensure on next run we always use a fresh smoke test investor, close the one used
-        {:ok, _} = Alpaca.create_order(@sym, "-1", investor_id)
-        {:ok, _} = Alpaca.close_account(investor_id)
-      end)
-
       # Buy 1 share of the stock we are about to get a policy on
-      {:ok, _} = Alpaca.create_order(@sym, "1", investor_id)
+      {:ok, _} = AlpacaClient.create_buy_order(@sym, "1", investor_id)
 
       # Fetch first offering
       assert_receive {^offerings_topic, :joined, [offering | _]}

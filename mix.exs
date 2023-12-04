@@ -26,6 +26,7 @@ defmodule BelayApiClient.MixProject do
 
   defp deps do
     [
+      {:alpaca_investors, github: "/withbelay/alpaca-investors", ref: "42f8b65109a883910440700efd0afae31bb8b7e1", only: :test},
       {:assert_eventually, "~> 1.0.0", only: :test},
       {:bypass, "~> 2.1", only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
