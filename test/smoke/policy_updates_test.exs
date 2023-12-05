@@ -25,7 +25,7 @@ defmodule Smoke.PolicyUpdatesTest do
   end
 
   setup %{token: token, host: host, partner_id: partner_id} do
-    policy_updates_topic = "policy_updates:#{partner_id}"
+    policy_updates_topic = "partner:policy_updates:#{partner_id}"
     offerings_topic = "offerings:#{partner_id}:#{@sym}"
 
     start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym], partner_id: partner_id})

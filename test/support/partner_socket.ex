@@ -55,7 +55,7 @@ defmodule BelayApiClient.PartnerSocket do
               join(socket, "offerings:#{socket.assigns.partner_id}:#{sym}")
             end)
 
-            join(socket, "policy_updates:#{socket.assigns.partner_id}")
+            join(socket, "partner:policy_updates:#{socket.assigns.partner_id}")
 
         {:error, reason} ->
           Logger.critical("Couldn't connect to Belay: #{inspect(reason)}")
