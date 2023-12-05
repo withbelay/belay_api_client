@@ -25,7 +25,7 @@ defmodule Smoke.PolicyUpdatesTest do
   end
 
   setup %{token: token, host: host, partner_id: partner_id} do
-    policy_updates_topic = "policy_updates:#{partner_id}"
+    policy_updates_topic = "partner:policy_updates:#{partner_id}"
     offerings_topic = "offerings:#{partner_id}:#{@sym}"
 
     start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym], partner_id: partner_id})
@@ -58,9 +58,9 @@ defmodule Smoke.PolicyUpdatesTest do
       assert {:ok, %{"policy_id" => policy_id}} =
                BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
 
-      assert_receive {^policy_updates_topic, "policy_update:requested", %{"policy_id" => ^policy_id}}
+      assert_receive {^policy_updates_topic, "partner:policy_update:requested", %{"policy_id" => ^policy_id}}
 
-      assert_receive {^policy_updates_topic, "policy_update:activated", %{"policy_id" => ^policy_id}}
+      assert_receive {^policy_updates_topic, "partner:policy_update:activated", %{"policy_id" => ^policy_id}}
 
       # Fetch the policies owned for investor_id and make sure we see the new policy there
       assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)
@@ -71,7 +71,7 @@ defmodule Smoke.PolicyUpdatesTest do
       # {:ok, _} = AlpacaClient.create_order(@sym, "-0.5", investor_id)
       # if sym price > policy_strike, assert policy qty is the same
       # if sym price < policy_strike, assert policy qty is policy qty - qty sold
-      # assert_receive {"policy_updates", "policy_update:qty_changed", %{"policy_id" => ^policy_id}}
+      # assert_receive {"policy_updates", "partner:policy_update:qty_changed", %{"policy_id" => ^policy_id}}
     end
 
     test "check a policy purchase call respects a purchase limit price being surpassed", %{token: token, policy_updates_topic: policy_updates_topic, offerings_topic: offerings_topic} do
@@ -98,11 +98,11 @@ defmodule Smoke.PolicyUpdatesTest do
       assert {:ok, %{"policy_id" => policy_id}} =
                BelayApiClient.buy_policy(client, investor_id, @sym, expiration, qty, strike, purchase_limit_price)
 
-      assert_receive {^policy_updates_topic, "policy_update:requested", %{"policy_id" => ^policy_id}}
+      assert_receive {^policy_updates_topic, "partner:policy_update:requested", %{"policy_id" => ^policy_id}}
 
       # FIXME: We need to add a assert_receive on a policy failed update, our code in belay-api currently does not emit it
       # assert_receive {"policy_updates", "policy_update:failed", %{"policy_id" => ^policy_id}}
-      refute_receive {^policy_updates_topic, "policy_update:activated", %{"policy_id" => ^policy_id}}
+      refute_receive {^policy_updates_topic, "partner:policy_update:activated", %{"policy_id" => ^policy_id}}
 
       # Fetch the policies owned for investor_id and make sure we don't see the new policy there
       assert {:ok, received_policies} = BelayApiClient.fetch_policies(client, investor_id)
