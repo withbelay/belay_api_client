@@ -32,8 +32,20 @@ defmodule Smoke.OfferingsTest do
   describe "when during market hours" do
     @describetag :smoke_open_hours
 
-    test "connect to server and see that we're getting offerings", %{offerings_topic: offerings_topic} do
+    test "connect to server and see that we're getting offerings on join and on periodic updates", %{offerings_topic: offerings_topic} do
       assert_receive {^offerings_topic, :joined, offerings}
+
+      assert %{
+               "expiration" => expiration,
+               "price" => _,
+               "strike" => _,
+               "sym" => "AAPL"
+             } = hd(offerings)
+
+      assert {:ok, _exp} = Date.from_iso8601(expiration)
+
+      # Assert that we receive an offering update within 10 seconds (+1 second for any type of delay)
+      assert_receive {^offerings_topic, "offerings", %{"offerings" => offerings}}, 11_000
 
       assert %{
                "expiration" => expiration,
