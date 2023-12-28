@@ -320,6 +320,23 @@ defmodule BelayApiClientTest do
     end
   end
 
+  describe "fetch_market_stock_universe" do
+    setup :create_client
+
+    test "returns market stock universe", %{bypass: bypass, client: client} do
+      expected_stock_universe = ["AAPL", "TSLA", "MSFT"]
+      expected_body = %{"stock_universe" => expected_stock_universe}
+
+      Bypass.expect_once(bypass, "GET", "/api/market/stock_universe", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(200, Jason.encode!(expected_body))
+      end)
+
+      assert BelayApiClient.fetch_market_stock_universe(client) == {:ok, expected_stock_universe}
+    end
+  end
+
   describe "buy_policy" do
     setup :create_client
 

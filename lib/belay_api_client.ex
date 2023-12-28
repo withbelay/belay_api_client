@@ -88,6 +88,19 @@ defmodule BelayApiClient do
   end
 
   @doc """
+  Fetch the market stock universe
+  """
+  def fetch_market_stock_universe(%Client{} = client) do
+    case Tesla.get(client, "/api/market/stock_universe") do
+      {:ok, %Tesla.Env{status: 200, body: %{"stock_universe" => stock_universe}}} ->
+        {:ok, stock_universe}
+
+      response ->
+        parse_error(response)
+    end
+  end
+
+  @doc """
   Fetch all partner policies
   """
   def fetch_policies(%Client{} = client) do
