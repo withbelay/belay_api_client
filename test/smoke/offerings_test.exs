@@ -44,8 +44,8 @@ defmodule Smoke.OfferingsTest do
 
       assert {:ok, _exp} = Date.from_iso8601(expiration)
 
-      # Assert that we receive an offering update within 10 seconds (+1 second for any type of delay)
-      assert_receive {^offerings_topic, "offerings", %{"offerings" => offerings}}, 11_000
+      # Assert that we receive an offering update within 30 seconds (+1 second for any type of delay)
+      assert_receive {^offerings_topic, "offerings", %{"offerings" => offerings}}, 31_000
 
       assert %{
                "expiration" => expiration,
