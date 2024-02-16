@@ -5,6 +5,8 @@ defmodule BelayApiClient do
   alias Decimal
   alias Tesla.Client
 
+  require Logger
+
   @doc """
   Create a Tesla client for calls against BelayApi for the given client_id and client_secret
 
@@ -152,5 +154,9 @@ defmodule BelayApiClient do
     do: {:error, %{status: status, error: body["error"]}}
 
   defp parse_error({_, %Tesla.Env{status: status}}), do: {:error, %{status: status}}
-  defp parse_error(_), do: {:error, :unknown}
+  defp parse_error(reason) do
+    Logger.error("[BelayApiClient] Unexpected result", reason: reason)
+
+    {:error, :unknown}
+  end
 end
