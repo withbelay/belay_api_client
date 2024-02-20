@@ -28,7 +28,10 @@ defmodule Smoke.PolicyUpdatesTest do
     policy_updates_topic = "partner:policy_updates:#{partner_id}"
     offerings_topic = "offerings:#{partner_id}:#{@sym}"
 
-    start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym], partner_id: partner_id})
+    start_supervised!(
+      {PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym], partner_id: partner_id}
+    )
+
     assert_receive {^policy_updates_topic, :joined, _}
 
     %{policy_updates_topic: policy_updates_topic, offerings_topic: offerings_topic}
@@ -37,7 +40,11 @@ defmodule Smoke.PolicyUpdatesTest do
   describe "when during market hours" do
     @describetag :smoke_open_hours
 
-    test "buy policy and ensure activation", %{token: token, policy_updates_topic: policy_updates_topic, offerings_topic: offerings_topic} do
+    test "buy policy and ensure activation", %{
+      token: token,
+      policy_updates_topic: policy_updates_topic,
+      offerings_topic: offerings_topic
+    } do
       {:ok, client} = BelayApiClient.client(token)
 
       # Fetch a investor that hasn't purchased a policy
@@ -74,7 +81,11 @@ defmodule Smoke.PolicyUpdatesTest do
       # assert_receive {"policy_updates", "partner:policy_update:qty_changed", %{"policy_id" => ^policy_id}}
     end
 
-    test "check a policy purchase call respects a purchase limit price being surpassed", %{token: token, policy_updates_topic: policy_updates_topic, offerings_topic: offerings_topic} do
+    test "check a policy purchase call respects a purchase limit price being surpassed", %{
+      token: token,
+      policy_updates_topic: policy_updates_topic,
+      offerings_topic: offerings_topic
+    } do
       {:ok, client} = BelayApiClient.client(token)
 
       # Fetch a investor that hasn't purchased a policy

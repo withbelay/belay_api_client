@@ -22,9 +22,11 @@ defmodule Smoke.OfferingsTest do
     policy_updates_topic = "partner:policy_updates:#{partner_id}"
     offerings_topic = "offerings:#{partner_id}:#{@sym}"
 
-    start_supervised!({PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym], partner_id: partner_id})
-    assert_receive {^policy_updates_topic, :joined, _}
+    start_supervised!(
+      {PartnerSocket, test_pid: self(), host: host, token: token, stock_universe: [@sym], partner_id: partner_id}
+    )
 
+    assert_receive {^policy_updates_topic, :joined, _}
 
     %{policy_updates_topic: policy_updates_topic, offerings_topic: offerings_topic}
   end
@@ -32,7 +34,9 @@ defmodule Smoke.OfferingsTest do
   describe "when during market hours" do
     @describetag :smoke_open_hours
 
-    test "connect to server and see that we're getting offerings on join and on periodic updates", %{offerings_topic: offerings_topic} do
+    test "connect to server and see that we're getting offerings on join and on periodic updates", %{
+      offerings_topic: offerings_topic
+    } do
       assert_receive {^offerings_topic, :joined, offerings}
 
       assert %{

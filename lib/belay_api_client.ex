@@ -167,6 +167,7 @@ defmodule BelayApiClient do
     do: {:error, %{status: status, error: body["error"]}}
 
   defp parse_error({_, %Tesla.Env{status: status}}), do: {:error, %{status: status}}
+
   defp parse_error(reason) do
     Logger.error("[BelayApiClient] Unexpected result", reason: reason)
 
