@@ -17,7 +17,12 @@ defmodule BelayApiClient.PartnerSocket do
 
     Slipstream.start_link(
       __MODULE__,
-      [uri: "#{host}/partner/websocket?token=#{token}", stock_universe: stock_universe, test_pid: test_pid, partner_id: partner_id],
+      [
+        uri: "#{host}/partner/websocket?token=#{token}",
+        stock_universe: stock_universe,
+        test_pid: test_pid,
+        partner_id: partner_id
+      ],
       name: __MODULE__
     )
   end
@@ -55,7 +60,7 @@ defmodule BelayApiClient.PartnerSocket do
               join(socket, "offerings:#{socket.assigns.partner_id}:#{sym}")
             end)
 
-            join(socket, "partner:policy_updates:#{socket.assigns.partner_id}")
+          join(socket, "partner:policy_updates:#{socket.assigns.partner_id}")
 
         {:error, reason} ->
           Logger.critical("Couldn't connect to Belay: #{inspect(reason)}")

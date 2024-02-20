@@ -146,6 +146,19 @@ defmodule BelayApiClient do
     end
   end
 
+  @doc """
+  Validate a discount code for an investor
+  """
+  def validate_discount_code(%Client{} = client, investor_id, discount_code) do
+    case Tesla.post(client, "/api/policies/discount/validate/#{discount_code}", %{investor_id: investor_id}) do
+      {:ok, %Tesla.Env{status: 200, body: %{"valid" => valid, "discount" => discount}}} ->
+        {:ok, %{valid: valid, discount: discount}}
+
+      response ->
+        parse_error(response)
+    end
+  end
+
   defp parse_error({:ok, %Tesla.Env{status: status, body: body}})
        when is_map_key(body, "error") and is_map_key(body, "error_detail"),
        do: {:error, %{status: status, error: body["error"], error_detail: body["error_detail"]}}
@@ -154,6 +167,7 @@ defmodule BelayApiClient do
     do: {:error, %{status: status, error: body["error"]}}
 
   defp parse_error({_, %Tesla.Env{status: status}}), do: {:error, %{status: status}}
+
   defp parse_error(reason) do
     Logger.error("[BelayApiClient] Unexpected result", reason: reason)
 
