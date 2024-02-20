@@ -359,9 +359,9 @@ defmodule BelayApiClientTest do
 
     test "returns discount", %{bypass: bypass, client: client} do
       code = "my_cool_discount"
-      expected_body = %{"valid" => true, "discount" => %{code: code}}
+      expected_body = %{valid: true, discount: %{"code" => code}}
 
-      Bypass.expect_once(bypass, "POST", "/api/discount/validate/#{code}", fn conn ->
+      Bypass.expect_once(bypass, "POST", "/api/policies/discount/validate/#{code}", fn conn ->
         conn
         |> Plug.Conn.put_resp_content_type("application/json")
         |> Plug.Conn.resp(200, Jason.encode!(expected_body))

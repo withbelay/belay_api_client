@@ -150,7 +150,7 @@ defmodule BelayApiClient do
   Validate a discount code for an investor
   """
   def validate_discount_code(%Client{} = client, investor_id, discount_code) do
-    case Tesla.get(client, "/api/discount/validate/#{discount_code}") do
+    case Tesla.post(client, "/api/policies/discount/validate/#{discount_code}", %{investor_id: investor_id}) do
       {:ok, %Tesla.Env{status: 200, body: %{"valid" => valid, "discount" => discount}}} ->
         {:ok, %{valid: valid, discount: discount}}
 
