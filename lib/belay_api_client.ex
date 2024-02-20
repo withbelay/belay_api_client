@@ -146,6 +146,19 @@ defmodule BelayApiClient do
     end
   end
 
+  @doc """
+  Validate a discount code for an investor
+  """
+  def validate_discount_code(%Client{} = client, investor_id, discount_code) do
+    case Tesla.get(client, "/api/discount/validate/#{discount_code}") do
+      {:ok, %Tesla.Env{status: 200, body: %{"valid" => valid, "discount" => discount}}} ->
+        {:ok, %{valid: valid, discount: discount}}
+
+      response ->
+        parse_error(response)
+    end
+  end
+
   defp parse_error({:ok, %Tesla.Env{status: status, body: body}})
        when is_map_key(body, "error") and is_map_key(body, "error_detail"),
        do: {:error, %{status: status, error: body["error"], error_detail: body["error_detail"]}}
