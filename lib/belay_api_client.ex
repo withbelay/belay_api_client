@@ -24,11 +24,17 @@ defmodule BelayApiClient do
     url = Application.fetch_env!(:belay_api_client, :api_url)
 
     middleware =
-      [{Tesla.Middleware.BaseUrl, url}, Tesla.Middleware.JSON] ++
-        [{Tesla.Middleware.Headers, [{"Authorization", "Bearer #{access_token}"}]}]
+      [
+        {Tesla.Middleware.BaseUrl, url},
+        {Tesla.Middleware.Logger, log_level: &log_level/1, debug: false, filter_headers: ~w[Authorization]},
+        Tesla.Middleware.JSON,
+        {Tesla.Middleware.Headers, [{"Authorization", "Bearer #{access_token}"}]}
+      ]
 
     {:ok, Tesla.client(middleware)}
   end
+
+  def log_level(env), do: if(env.status < 400, do: :debug, else: :default)
 
   @doc """
   Fetch an auth token from BelayApi for the given client_id and client_secret.
@@ -160,17 +166,16 @@ defmodule BelayApiClient do
   end
 
   defp parse_error({:ok, %Tesla.Env{status: status, body: body}})
-       when is_map_key(body, "error") and is_map_key(body, "error_detail"),
-       do: {:error, %{status: status, error: body["error"], error_detail: body["error_detail"]}}
+       when is_map_key(body, "error") and is_map_key(body, "error_detail") do
+    {:error, %{status: status, error: body["error"], error_detail: body["error_detail"]}}
+  end
 
   defp parse_error({:ok, %Tesla.Env{status: status, body: body}}) when is_map_key(body, "error"),
     do: {:error, %{status: status, error: body["error"]}}
 
   defp parse_error({_, %Tesla.Env{status: status}}), do: {:error, %{status: status}}
 
-  defp parse_error(reason) do
-    Logger.error("[BelayApiClient] Unexpected result", reason: reason)
-
+  defp parse_error(_reason) do
     {:error, :unknown}
   end
 end
