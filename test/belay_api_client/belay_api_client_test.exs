@@ -352,6 +352,20 @@ defmodule BelayApiClientTest do
       assert {:ok, expected_body} ==
                BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42, 100)
     end
+
+
+    test "returns policy request when provided discount code", %{bypass: bypass, client: client} do
+      expected_body = %{"test" => "body"}
+
+      Bypass.expect_once(bypass, "POST", "/api/policies", fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(200, Jason.encode!(expected_body))
+      end)
+
+      assert {:ok, expected_body} ==
+               BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42, 100, "cool_code")
+    end
   end
 
   describe "validate_discount_code" do

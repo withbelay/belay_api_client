@@ -135,7 +135,7 @@ defmodule BelayApiClient do
   @doc """
   Buy a policy for the given investor
   """
-  def buy_policy(%Client{} = client, investor_id, sym, expiration, qty, strike, purchase_limit_price) do
+  def buy_policy(%Client{} = client, investor_id, sym, expiration, qty, strike, purchase_limit_price, discount_code \\ nil) do
     policy = %{
       "sym" => sym,
       "expiration" => expiration,
@@ -145,6 +145,12 @@ defmodule BelayApiClient do
       "partner_investor_id" => investor_id,
       "purchase_limit_price" => purchase_limit_price
     }
+
+    policy = if discount_code do
+      Map.put(policy, "discount_code", discount_code)
+    else
+      policy
+    end
 
     case Tesla.post(client, "/api/policies", policy) do
       {:ok, %Tesla.Env{status: 200, body: policy_request}} -> {:ok, policy_request}
