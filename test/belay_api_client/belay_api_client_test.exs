@@ -368,20 +368,20 @@ defmodule BelayApiClientTest do
     end
   end
 
-  describe "validate_discount_code" do
+  describe "apply_discount_code" do
     setup :create_client
 
     test "returns discount", %{bypass: bypass, client: client} do
       code = "my_cool_discount"
-      expected_body = %{valid: true, discount: %{"code" => code}}
+      expected_body = %{valid: true, discount_info: %{"code" => code}, discounted_price: 42.0}
 
-      Bypass.expect_once(bypass, "POST", "/api/policies/discount/validate/#{code}", fn conn ->
+      Bypass.expect_once(bypass, "POST", "/api/policies/discount/apply/#{code}", fn conn ->
         conn
         |> Plug.Conn.put_resp_content_type("application/json")
         |> Plug.Conn.resp(200, Jason.encode!(expected_body))
       end)
 
-      assert {:ok, expected_body} == BelayApiClient.validate_discount_code(client, @investor_id, code)
+      assert {:ok, expected_body} == BelayApiClient.apply_discount_code(client, @investor_id, code, 50.0)
     end
   end
 
