@@ -159,12 +159,12 @@ defmodule BelayApiClient do
   end
 
   @doc """
-  Validate a discount code for an investor
+  Apply a discount code for an investor's purchase
   """
-  def validate_discount_code(%Client{} = client, investor_id, discount_code) do
-    case Tesla.post(client, "/api/policies/discount/validate/#{discount_code}", %{investor_id: investor_id}) do
-      {:ok, %Tesla.Env{status: 200, body: %{"valid" => valid, "discount" => discount}}} ->
-        {:ok, %{valid: valid, discount: discount}}
+  def apply_discount_code(%Client{} = client, investor_id, discount_code, price) do
+    case Tesla.post(client, "/api/discount/apply/#{discount_code}", %{investor_id: investor_id, price: price}) do
+      {:ok, %Tesla.Env{status: 200, body: %{"valid" => valid, "discount_info" => discount_info, "discounted_price" => discounted_price}}} ->
+        {:ok, %{valid: valid, discount_info: discount_info, discounted_price: discounted_price}}
 
       response ->
         parse_error(response)
