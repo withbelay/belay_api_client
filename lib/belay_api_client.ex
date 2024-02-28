@@ -34,7 +34,8 @@ defmodule BelayApiClient do
     {:ok, Tesla.client(middleware)}
   end
 
-  def log_level(env), do: if(env.status < 400, do: :debug, else: :default)
+  def log_level(env) when env.status >= 500, do: :error
+  def log_level(_), do: :debug
 
   @doc """
   Fetch an auth token from BelayApi for the given client_id and client_secret.
