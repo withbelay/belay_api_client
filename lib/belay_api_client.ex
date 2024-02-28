@@ -161,8 +161,20 @@ defmodule BelayApiClient do
   @doc """
   Apply a discount code for an investor's purchase
   """
+  def apply_discount_code(%Client{} = client, nil, discount_code, price) do
+    client
+    |> Tesla.post("/api/discount/apply/#{discount_code}", %{price: price})
+    |> parse_discount_code_response()
+  end
+
   def apply_discount_code(%Client{} = client, investor_id, discount_code, price) do
-    case Tesla.post(client, "/api/discount/apply/#{discount_code}", %{investor_id: investor_id, price: price}) do
+    client
+    |> Tesla.post("/api/discount/apply/#{discount_code}", %{investor_id: investor_id, price: price})
+    |> parse_discount_code_response()
+  end
+
+  defp parse_discount_code_response(discount_result) do
+    case discount_result do
       {:ok, %Tesla.Env{status: 200, body: %{"valid" => valid, "discount_info" => discount_info, "discounted_price" => discounted_price}}} ->
         {:ok, %{valid: valid, discount_info: discount_info, discounted_price: discounted_price}}
 
