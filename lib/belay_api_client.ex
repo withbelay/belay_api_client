@@ -26,7 +26,9 @@ defmodule BelayApiClient do
     middleware =
       [
         {Tesla.Middleware.BaseUrl, url},
+        Tesla.Middleware.OpenTelemetry,
         {Tesla.Middleware.Logger, log_level: &log_level/1, debug: false, filter_headers: ~w[Authorization]},
+        Tesla.Middleware.UniqueRequestId,
         Tesla.Middleware.JSON,
         {Tesla.Middleware.Headers, [{"Authorization", "Bearer #{access_token}"}]}
       ]
@@ -136,7 +138,16 @@ defmodule BelayApiClient do
   @doc """
   Buy a policy for the given investor
   """
-  def buy_policy(%Client{} = client, investor_id, sym, expiration, qty, strike, purchase_limit_price, discount_code \\ nil) do
+  def buy_policy(
+        %Client{} = client,
+        investor_id,
+        sym,
+        expiration,
+        qty,
+        strike,
+        purchase_limit_price,
+        discount_code \\ nil
+      ) do
     policy = %{
       "sym" => sym,
       "expiration" => expiration,
@@ -147,11 +158,12 @@ defmodule BelayApiClient do
       "purchase_limit_price" => purchase_limit_price
     }
 
-    policy = if discount_code do
-      Map.put(policy, "discount_code", discount_code)
-    else
-      policy
-    end
+    policy =
+      if discount_code do
+        Map.put(policy, "discount_code", discount_code)
+      else
+        policy
+      end
 
     case Tesla.post(client, "/api/policies", policy) do
       {:ok, %Tesla.Env{status: 200, body: policy_request}} -> {:ok, policy_request}
@@ -176,7 +188,11 @@ defmodule BelayApiClient do
 
   defp parse_discount_code_response(discount_result) do
     case discount_result do
-      {:ok, %Tesla.Env{status: 200, body: %{"valid" => valid, "discount_info" => discount_info, "discounted_price" => discounted_price}}} ->
+      {:ok,
+       %Tesla.Env{
+         status: 200,
+         body: %{"valid" => valid, "discount_info" => discount_info, "discounted_price" => discounted_price}
+       }} ->
         {:ok, %{valid: valid, discount_info: discount_info, discounted_price: discounted_price}}
 
       response ->
