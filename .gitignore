@@ -27,7 +27,6 @@ belay_api_client-*.tar
 /.idea/
 /belay_api_client.iml
 
-.envrc
 .history/
 .env
 .env.staging
