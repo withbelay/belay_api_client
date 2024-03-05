@@ -353,7 +353,6 @@ defmodule BelayApiClientTest do
                BelayApiClient.buy_policy(client, @investor_id, "AAPL", "2023-11-23", 10, 42, 100)
     end
 
-
     test "returns policy request when provided discount code", %{bypass: bypass, client: client} do
       expected_body = %{"test" => "body"}
 

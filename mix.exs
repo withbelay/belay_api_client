@@ -34,6 +34,7 @@ defmodule BelayApiClient.MixProject do
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:elixir_uuid, "~> 1.2"},
       {:esbuild, "~> 0.7.1", runtime: Mix.env() == :dev},
+      {:opentelemetry_tesla, "~> 2.4.0"},
       {:slipstream, "~> 1.1"},
       {:tesla, "~> 1.7"}
     ]
