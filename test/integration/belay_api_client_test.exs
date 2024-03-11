@@ -30,9 +30,7 @@ defmodule Integration.BelayApiClientTest do
     end
 
     test "fetch_market_clock" do
-      client = create_real_client()
-
-      assert {:ok, %{is_open: is_open, opens_in: opens_in}} = BelayApiClient.fetch_market_clock(client)
+      assert {:ok, %{is_open: is_open, opens_in: opens_in}} = BelayApiClient.fetch_market_clock()
 
       case is_open do
         true -> assert opens_in == 0

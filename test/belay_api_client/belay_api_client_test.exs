@@ -305,9 +305,7 @@ defmodule BelayApiClientTest do
   end
 
   describe "fetch_market_clock" do
-    setup :create_client
-
-    test "returns market clock", %{bypass: bypass, client: client} do
+    test "returns market clock", %{bypass: bypass} do
       expected_body = %{"is_open" => true, "opens_in" => 0}
 
       Bypass.expect_once(bypass, "GET", "/api/market/clock", fn conn ->
@@ -316,14 +314,12 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(200, Jason.encode!(expected_body))
       end)
 
-      assert {:ok, %{is_open: true, opens_in: 0}} == BelayApiClient.fetch_market_clock(client)
+      assert {:ok, %{is_open: true, opens_in: 0}} == BelayApiClient.fetch_market_clock()
     end
   end
 
   describe "fetch_market_stock_universe" do
-    setup :create_client
-
-    test "returns market stock universe", %{bypass: bypass, client: client} do
+    test "returns market stock universe", %{bypass: bypass} do
       expected_stock_universe = ["AAPL", "TSLA", "MSFT"]
       expected_body = %{"stock_universe" => expected_stock_universe}
 
@@ -333,7 +329,7 @@ defmodule BelayApiClientTest do
         |> Plug.Conn.resp(200, Jason.encode!(expected_body))
       end)
 
-      assert BelayApiClient.fetch_market_stock_universe(client) == {:ok, expected_stock_universe}
+      assert BelayApiClient.fetch_market_stock_universe() == {:ok, expected_stock_universe}
     end
   end
 

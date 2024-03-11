@@ -12,28 +12,39 @@ defmodule BelayApiClient do
 
   Used for most calls with this interface
   """
-  @spec client(String.t(), String.t()) :: Tesla.Client.t()
+  @spec client(String.t(), String.t()) :: {:ok, Tesla.Client.t()} | {:error, any()}
   def client(client_id, client_secret) do
     with {:ok, %{access_token: access_token}} <- fetch_token(client_id, client_secret) do
       client(access_token)
     end
   end
 
-  @spec client(String.t()) :: Tesla.Client.t()
+  @spec client(String.t()) :: {:ok, Tesla.Client.t()}
   def client(access_token) do
+    base_middlewares = Tesla.Client.middleware(public_client())
+
+    auth_middleware =
+      [
+        Tesla.Middleware.OpenTelemetry,
+        Tesla.Middleware.UniqueRequestId,
+        {Tesla.Middleware.Headers, [{"Authorization", "Bearer #{access_token}"}]}
+      ]
+
+    {:ok, Tesla.client(base_middlewares ++ auth_middleware)}
+  end
+
+  @spec public_client() :: Tesla.Client.t()
+  def public_client do
     url = Application.fetch_env!(:belay_api_client, :api_url)
 
     middleware =
       [
         {Tesla.Middleware.BaseUrl, url},
-        Tesla.Middleware.OpenTelemetry,
         {Tesla.Middleware.Logger, log_level: &log_level/1, debug: false, filter_headers: ~w[Authorization]},
-        Tesla.Middleware.UniqueRequestId,
-        Tesla.Middleware.JSON,
-        {Tesla.Middleware.Headers, [{"Authorization", "Bearer #{access_token}"}]}
+        Tesla.Middleware.JSON
       ]
 
-    {:ok, Tesla.client(middleware)}
+    Tesla.client(middleware)
   end
 
   def log_level(env) when env.status >= 500, do: :error
@@ -43,10 +54,7 @@ defmodule BelayApiClient do
   Fetch an auth token from BelayApi for the given client_id and client_secret.
   """
   def fetch_token(client_id, client_secret) do
-    url = Application.fetch_env!(:belay_api_client, :api_url)
-    client = Tesla.client([{Tesla.Middleware.BaseUrl, url}, Tesla.Middleware.JSON])
-
-    case Tesla.post(client, "/api/oauth/token", %{client_id: client_id, client_secret: client_secret}) do
+    case Tesla.post(public_client(), "/api/oauth/token", %{client_id: client_id, client_secret: client_secret}) do
       {:ok, %Tesla.Env{status: 200, body: %{"access_token" => access_token, "expires_in" => expires_in}}} ->
         {:ok, %{access_token: access_token, expires_in: expires_in}}
 
@@ -88,8 +96,8 @@ defmodule BelayApiClient do
   @doc """
   Fetch the market clock
   """
-  def fetch_market_clock(%Client{} = client) do
-    case Tesla.get(client, "/api/market/clock") do
+  def fetch_market_clock do
+    case Tesla.get(public_client(), "/api/market/clock") do
       {:ok, %Tesla.Env{status: 200, body: %{"is_open" => is_open, "opens_in" => opens_in}}} ->
         {:ok, %{is_open: is_open, opens_in: opens_in}}
 
@@ -101,8 +109,8 @@ defmodule BelayApiClient do
   @doc """
   Fetch the market stock universe
   """
-  def fetch_market_stock_universe(%Client{} = client) do
-    case Tesla.get(client, "/api/market/stock_universe") do
+  def fetch_market_stock_universe do
+    case Tesla.get(public_client(), "/api/market/stock_universe") do
       {:ok, %Tesla.Env{status: 200, body: %{"stock_universe" => stock_universe}}} ->
         {:ok, stock_universe}
 

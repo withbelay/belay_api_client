@@ -5,10 +5,7 @@ ExUnit.configure(assert_receive_timeout: :timer.minutes(1), timeout: :timer.minu
 is_smoke = :smoke in ExUnit.configuration()[:include]
 
 # Figure out if market is open
-client_id = Application.fetch_env!(:belay_api_client, :client_id)
-client_secret = Application.fetch_env!(:belay_api_client, :client_secret)
-{:ok, client} = BelayApiClient.client(client_id, client_secret)
-{:ok, %{is_open: is_market_open}} = BelayApiClient.fetch_market_clock(client)
+{:ok, %{is_open: is_market_open}} = BelayApiClient.fetch_market_clock()
 
 cond do
   is_smoke and is_market_open ->
